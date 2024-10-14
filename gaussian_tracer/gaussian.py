@@ -20,7 +20,6 @@ from utils.sh_utils import RGB2SH
 from simple_knn._C import distCUDA2
 from utils.graphics_utils import BasicPointCloud
 from utils.general_utils import strip_symmetric, build_scaling_rotation
-from gaussian_renderer.tracer import GaussianTracer
 import trimesh
 
 class GaussianModel:
@@ -67,9 +66,6 @@ class GaussianModel:
         # the central point of each face must be on the unit sphere
         self.unit_icosahedron_vertices = torch.from_numpy(icosahedron.vertices).float().cuda() * 1.2584 
         self.unit_icosahedron_faces = torch.from_numpy(icosahedron.faces).long().cuda()
-        
-        self.gaussian_tracer = GaussianTracer()
-        self.alpha_min = 0.01
 
     def capture(self):
         return (
@@ -129,6 +125,10 @@ class GaussianModel:
     
     def get_covariance(self, scaling_modifier = 1):
         return self.covariance_activation(self.get_scaling, scaling_modifier, self._rotation)
+
+    def get_SinvR(self):
+        L = build_scaling_rotation(1 / self.get_scaling, self._rotation)
+        return L  # this is SinvR transpose, because in cuda, tmat is column-major
 
     def oneupSHdegree(self):
         if self.active_sh_degree < self.max_sh_degree:
@@ -234,9 +234,9 @@ class GaussianModel:
         opacities = np.asarray(plydata.elements[0]["opacity"])[..., np.newaxis]
 
         features_dc = np.zeros((xyz.shape[0], 3, 1))
-        # features_dc[:, 0, 0] = np.asarray(plydata.elements[0]["f_dc_0"])
-        # features_dc[:, 1, 0] = np.asarray(plydata.elements[0]["f_dc_1"])
-        # features_dc[:, 2, 0] = np.asarray(plydata.elements[0]["f_dc_2"])
+        features_dc[:, 0, 0] = np.asarray(plydata.elements[0]["f_dc_0"])
+        features_dc[:, 1, 0] = np.asarray(plydata.elements[0]["f_dc_1"])
+        features_dc[:, 2, 0] = np.asarray(plydata.elements[0]["f_dc_2"])
 
         extra_f_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("f_rest_")]
         extra_f_names = sorted(extra_f_names, key = lambda x: int(x.split('_')[-1]))
@@ -419,7 +419,7 @@ class GaussianModel:
         self.xyz_gradient_accum[update_filter] += torch.norm(viewspace_point_tensor.grad[update_filter,:2], dim=-1, keepdim=True)
         self.denom[update_filter] += 1
         
-    def get_boundings(self, alpha_min=0.01):
+    def get_boundings(self, sigma=0.3, alpha_min=0.01):
         mu = self.get_xyz
         opacity = self.get_opacity
         L = build_scaling_rotation(self.get_scaling, self._rotation)
@@ -427,28 +427,3 @@ class GaussianModel:
         faces_b = self.unit_icosahedron_faces[None] + torch.arange(mu.shape[0], device="cuda")[:, None, None] * 12
         gs_id = torch.arange(mu.shape[0], device="cuda")[:, None].expand(-1, faces_b.shape[1])
         return vertices_b.reshape(-1, 3), faces_b.reshape(-1, 3), gs_id.reshape(-1)
-    
-    def get_SinvR(self):
-        L = build_scaling_rotation(1 / self.get_scaling, self._rotation)
-        return L  # this is SinvR transpose, because in cuda, tmat is column-major
-
-    def build_bvh(self):
-        vertices_b, faces_b, gs_id = self.get_boundings(alpha_min=self.alpha_min)
-        self.gaussian_tracer.build_bvh(vertices_b, faces_b, gs_id)
-        
-    def update_bvh(self):
-        vertices_b, faces_b, gs_id = self.get_boundings(alpha_min=self.alpha_min)
-        self.gaussian_tracer.update_bvh(vertices_b, faces_b, gs_id)
-        
-    def trace(self, rays_o, rays_d, alpha_min=0.01):
-        SinvR = self.get_SinvR()
-        means3D = self.get_xyz
-        shs = self.get_features
-        opacity = self.get_opacity
-
-        colors, depth, alpha = self.gaussian_tracer.trace(rays_o, rays_d, means3D, opacity, SinvR, shs, alpha_min=self.alpha_min, deg=self.active_sh_degree)
-        return {
-            "render": colors,
-            "depth": depth,
-            "alpha" : alpha,
-        }
