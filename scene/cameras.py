@@ -63,8 +63,8 @@ class Camera(nn.Module):
                               torch.arange(self.image_width, device='cuda'), indexing="ij")
         focal_x = self.image_width / (2 * np.tan(self.FoVx * 0.5))
         focal_y = self.image_height / (2 * np.tan(self.FoVy * 0.5))
-        rays_d_camera = torch.stack([(u - self.image_width / 2) / focal_x,
-                                  (v - self.image_height / 2) / focal_y,
+        rays_d_camera = torch.stack([(u - self.image_width / 2 + 0.5) / focal_x,
+                                  (v - self.image_height / 2 + 0.5) / focal_y,
                                   torch.ones_like(u)], dim=-1).reshape(-1, 3)
         rays_d = rays_d_camera @ self.world_view_transform[:3, :3].T
         rays_d = F.normalize(rays_d, dim=-1)
@@ -72,6 +72,9 @@ class Camera(nn.Module):
         return rays_o, rays_d
         # rays_rgb = self.original_image.permute(1, 2, 0).reshape(-1, 3)
         # return rays_o, rays_d, rays_rgb
+        
+    def get_rays_rgb(self):
+        return self.original_image.permute(1, 2, 0).reshape(-1, 3)
         
     
     

@@ -43,7 +43,7 @@ class GaussianModel:
         self.rotation_activation = torch.nn.functional.normalize
 
 
-    def __init__(self, sh_degree : int):
+    def __init__(self, sh_degree : int, transmittance_min=0.001):
         self.active_sh_degree = 0
         self.max_sh_degree = sh_degree  
         self._xyz = torch.empty(0)
@@ -52,7 +52,6 @@ class GaussianModel:
         self._scaling = torch.empty(0)
         self._rotation = torch.empty(0)
         self._opacity = torch.empty(0)
-        self.max_radii2D = torch.empty(0)
         self.xyz_gradient_accum = torch.empty(0)
         self.denom = torch.empty(0)
         self.optimizer = None
@@ -68,8 +67,8 @@ class GaussianModel:
         self.unit_icosahedron_vertices = torch.from_numpy(icosahedron.vertices).float().cuda() * 1.2584 
         self.unit_icosahedron_faces = torch.from_numpy(icosahedron.faces).long().cuda()
         
-        self.gaussian_tracer = GaussianTracer()
-        self.alpha_min = 0.01
+        self.gaussian_tracer = GaussianTracer(transmittance_min=transmittance_min)
+        self.alpha_min = 1 / 255
 
     def capture(self):
         return (
@@ -80,7 +79,6 @@ class GaussianModel:
             self._scaling,
             self._rotation,
             self._opacity,
-            self.max_radii2D,
             self.xyz_gradient_accum,
             self.denom,
             self.optimizer.state_dict(),
@@ -95,7 +93,6 @@ class GaussianModel:
         self._scaling, 
         self._rotation, 
         self._opacity,
-        self.max_radii2D, 
         xyz_gradient_accum, 
         denom,
         opt_dict, 
@@ -136,7 +133,7 @@ class GaussianModel:
 
     def create_from_pcd(self, pcd : BasicPointCloud, spatial_lr_scale : float):
         self.spatial_lr_scale = spatial_lr_scale
-        fused_point_cloud = torch.tensor(np.asarray(pcd.points)).float().cuda()
+        fused_point_cloud = torch.tensor(np.asarray(pcd.points).copy()).float().cuda()
         fused_color = RGB2SH(torch.tensor(np.asarray(pcd.colors)).float().cuda())
         features = torch.zeros((fused_color.shape[0], 3, (self.max_sh_degree + 1) ** 2)).float().cuda()
         features[:, :3, 0 ] = fused_color
@@ -157,7 +154,6 @@ class GaussianModel:
         self._scaling = nn.Parameter(scales.requires_grad_(True))
         self._rotation = nn.Parameter(rots.requires_grad_(True))
         self._opacity = nn.Parameter(opacities.requires_grad_(True))
-        self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
 
     def training_setup(self, training_args):
         self.percent_dense = training_args.percent_dense
@@ -234,9 +230,9 @@ class GaussianModel:
         opacities = np.asarray(plydata.elements[0]["opacity"])[..., np.newaxis]
 
         features_dc = np.zeros((xyz.shape[0], 3, 1))
-        # features_dc[:, 0, 0] = np.asarray(plydata.elements[0]["f_dc_0"])
-        # features_dc[:, 1, 0] = np.asarray(plydata.elements[0]["f_dc_1"])
-        # features_dc[:, 2, 0] = np.asarray(plydata.elements[0]["f_dc_2"])
+        features_dc[:, 0, 0] = np.asarray(plydata.elements[0]["f_dc_0"])
+        features_dc[:, 1, 0] = np.asarray(plydata.elements[0]["f_dc_1"])
+        features_dc[:, 2, 0] = np.asarray(plydata.elements[0]["f_dc_2"])
 
         extra_f_names = [p.name for p in plydata.elements[0].properties if p.name.startswith("f_rest_")]
         extra_f_names = sorted(extra_f_names, key = lambda x: int(x.split('_')[-1]))
@@ -304,7 +300,7 @@ class GaussianModel:
     def prune_points(self, mask):
         valid_points_mask = ~mask
         optimizable_tensors = self._prune_optimizer(valid_points_mask)
-
+        # import pdb;pdb.set_trace()
         self._xyz = optimizable_tensors["xyz"]
         self._features_dc = optimizable_tensors["f_dc"]
         self._features_rest = optimizable_tensors["f_rest"]
@@ -315,7 +311,6 @@ class GaussianModel:
         self.xyz_gradient_accum = self.xyz_gradient_accum[valid_points_mask]
 
         self.denom = self.denom[valid_points_mask]
-        self.max_radii2D = self.max_radii2D[valid_points_mask]
 
     def cat_tensors_to_optimizer(self, tensors_dict):
         optimizable_tensors = {}
@@ -357,7 +352,6 @@ class GaussianModel:
 
         self.xyz_gradient_accum = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
         self.denom = torch.zeros((self.get_xyz.shape[0], 1), device="cuda")
-        self.max_radii2D = torch.zeros((self.get_xyz.shape[0]), device="cuda")
 
     def densify_and_split(self, grads, grad_threshold, scene_extent, N=2):
         n_init_points = self.get_xyz.shape[0]
@@ -399,7 +393,7 @@ class GaussianModel:
 
         self.densification_postfix(new_xyz, new_features_dc, new_features_rest, new_opacities, new_scaling, new_rotation)
 
-    def densify_and_prune(self, max_grad, min_opacity, extent, max_screen_size):
+    def densify_and_prune(self, max_grad, min_opacity, extent):
         grads = self.xyz_gradient_accum / self.denom
         grads[grads.isnan()] = 0.0
 
@@ -407,17 +401,18 @@ class GaussianModel:
         self.densify_and_split(grads, max_grad, extent)
 
         prune_mask = (self.get_opacity < min_opacity).squeeze()
-        if max_screen_size:
-            big_points_vs = self.max_radii2D > max_screen_size
-            big_points_ws = self.get_scaling.max(dim=1).values > 0.1 * extent
-            prune_mask = torch.logical_or(torch.logical_or(prune_mask, big_points_vs), big_points_ws)
+        big_points_ws = self.get_scaling.max(dim=1).values > 0.1 * extent
+        prune_mask = torch.logical_or(prune_mask, big_points_ws)
         self.prune_points(prune_mask)
+        # vertices_b, faces_b, _ = self.get_boundings()
+        # trimesh.Trimesh(vertices=vertices_b.detach().cpu().numpy(), faces=faces_b.detach().cpu().numpy()).export("boundings.ply")
+        # torch.cuda.empty_cache()
 
-        torch.cuda.empty_cache()
-
-    def add_densification_stats(self, viewspace_point_tensor, update_filter):
-        self.xyz_gradient_accum[update_filter] += torch.norm(viewspace_point_tensor.grad[update_filter,:2], dim=-1, keepdim=True)
-        self.denom[update_filter] += 1
+    def add_densification_stats(self):
+        self.xyz_gradient_accum += torch.norm(self._xyz.grad, dim=-1, keepdim=True)
+        self.denom += 1
+        # self.xyz_gradient_accum[update_filter] += torch.norm(self._xyz.grad[update_filter], dim=-1, keepdim=True)
+        # self.denom[update_filter] += 1
         
     def get_boundings(self, alpha_min=0.01):
         mu = self.get_xyz
@@ -428,11 +423,32 @@ class GaussianModel:
         gs_id = torch.arange(mu.shape[0], device="cuda")[:, None].expand(-1, faces_b.shape[1])
         return vertices_b.reshape(-1, 3), faces_b.reshape(-1, 3), gs_id.reshape(-1)
     
+    def get_covariance_inv(self, scaling_modifier = 1):
+        return self.covariance_activation(1/self.get_scaling, scaling_modifier, self._rotation)
+
     def get_SinvR(self):
         L = build_scaling_rotation(1 / self.get_scaling, self._rotation)
+        
+        # s = 1 / self.get_scaling
+        # r = self._rotation
+        # L = torch.zeros((s.shape[0], 3, 3), dtype=torch.float, device="cuda")
+        # R = build_rotation(r).transpose(-1, -2)
+
+        # L[:,0,0] = s[:,0]
+        # L[:,1,1] = s[:,1]
+        # L[:,2,2] = s[:,2]
+
+        # L = R.transpose(-1, -2) @ L
         return L  # this is SinvR transpose, because in cuda, tmat is column-major
 
+    def reset_tracer(self):
+        """Something wrong, the cuda memory is not cleaned"""
+        del self.gaussian_tracer
+        self.gaussian_tracer = GaussianTracer(transmittance_min=0.001)
+
+    @torch.no_grad()
     def build_bvh(self):
+        # self.reset_tracer()
         vertices_b, faces_b, gs_id = self.get_boundings(alpha_min=self.alpha_min)
         self.gaussian_tracer.build_bvh(vertices_b, faces_b, gs_id)
         
@@ -440,13 +456,47 @@ class GaussianModel:
         vertices_b, faces_b, gs_id = self.get_boundings(alpha_min=self.alpha_min)
         self.gaussian_tracer.update_bvh(vertices_b, faces_b, gs_id)
         
-    def trace(self, rays_o, rays_d, alpha_min=0.01):
+    def trace(self, rays_o, rays_d):
         SinvR = self.get_SinvR()
         means3D = self.get_xyz
         shs = self.get_features
         opacity = self.get_opacity
+        # cov_inv = self.get_covariance_inv()
 
+        # s = 1 / self.get_scaling
+        # r = self._rotation
+        # L = torch.zeros((s.shape[0], 3, 3), dtype=torch.float, device="cuda")
+        # R = build_rotation(r).transpose(-1, -2)
+        # L[:,0,0] = s[:,0]
+        # L[:,1,1] = s[:,1]
+        # L[:,2,2] = s[:,2]
+        # SinvR = R.transpose(-1, -2) @ L
+        # SinvR.retain_grad()
+        
         colors, depth, alpha = self.gaussian_tracer.trace(rays_o, rays_d, means3D, opacity, SinvR, shs, alpha_min=self.alpha_min, deg=self.active_sh_degree)
+        
+        # import trimesh
+        # vertices_b, faces_b, gs_id = self.get_boundings(alpha_min=self.alpha_min)
+        # m=trimesh.Trimesh(vertices=vertices_b.detach().cpu().numpy(), faces=faces_b.detach().cpu().numpy()).export("1.ply")
+        # m=trimesh.Trimesh(vertices=(rays_o+rays_d*depth[:,None]).detach().cpu().numpy()).export("2.ply")
+        # m=trimesh.Trimesh(vertices=means3D.detach().cpu().numpy()).export("3.ply")
+        
+        # o_g = ((rays_o-means3D)[:, None] @ SinvR)[:, 0]
+        # d_g = ((rays_d)[:, None] @ SinvR)[:, 0]
+        # t = -(o_g*d_g).sum(dim=-1) / (d_g*d_g).sum(dim=-1)
+        # m=trimesh.Trimesh(vertices=(rays_o+rays_d*t[:,None]).detach().cpu().numpy()).export("4.ply")
+        
+        # R = build_rotation(self._rotation)
+        # scales = self.get_scaling*10
+        # R0 = R[:, :, 0]
+        # R1 = R[:, :, 1]
+        # R2 = R[:, :, 2]
+        # x = torch.cat([means3D+torch.linspace(0,1,100).cuda()[:, None]*R0*scales[0,0], means3D+torch.linspace(0,1,100).cuda()[:, None]*R1*scales[0,1], means3D+torch.linspace(0,1,100).cuda()[:, None]*R2*scales[0,2]])
+        # m=trimesh.Trimesh(vertices=(x).detach().cpu().numpy()).export("5.ply")
+        # import pdb;pdb.set_trace()
+        
+        
+        
         return {
             "render": colors,
             "depth": depth,

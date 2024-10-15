@@ -26,7 +26,9 @@ extern "C" __global__ void __raygen__rg() {
 	unsigned int hitArrayPtr0 = (unsigned int)((uintptr_t)(&hitArray) & 0xFFFFFFFF);
     unsigned int hitArrayPtr1 = (unsigned int)(((uintptr_t)(&hitArray) >> 32) & 0xFFFFFFFF);
 
+	int k=0;
 	while ((t_start < T_SCENE_MAX) && (T > params.transmittance_min)){
+		k++;
 		ray_origin = ray_o + t_start * ray_d;
 		
 		for (int i = 0; i < MAX_BUFFER_SIZE; ++i) {
@@ -66,13 +68,16 @@ extern "C" __global__ void __raygen__rg() {
 
 				vec3 o_g = SinvR * (ray_o - mean3D); 
 				vec3 d_g = SinvR * ray_d;
-				float d = -dot(o_g, d_g) / dot(d_g, d_g);
+				float d = -dot(o_g, d_g) / max(1e-6f, dot(d_g, d_g));
+				// float d = t_start + t_curr;
 
 				vec3 pos = ray_o + d * ray_d;
 				vec3 p_g = SinvR * (mean3D - pos); 
-				float alpha = o * __expf(-0.5f * dot(p_g, p_g));
+				float alpha = min(0.99f, o * __expf(-0.5f * dot(p_g, p_g)));
+				// float alpha = 1.0f;
 
 				if (alpha<params.alpha_min) continue;
+				// alpha = 1.0f;
 
 				vec3 c = computeColorFromSH_forward(params.deg, ray_d, params.shs + gs_idx * params.max_coeffs);
 
@@ -92,6 +97,7 @@ extern "C" __global__ void __raygen__rg() {
 		}
 		if (t_curr==0.0f) break;
 		t_start += t_curr;
+		if (k>1000){printf("t_curr:%e\n",t_curr);}
 	}
 	
 	params.colors[idx.x] = C;

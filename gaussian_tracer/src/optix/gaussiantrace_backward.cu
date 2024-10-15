@@ -29,7 +29,9 @@ extern "C" __global__ void __raygen__rg() {
 	unsigned int hitArrayPtr0 = (unsigned int)((uintptr_t)(&hitArray) & 0xFFFFFFFF);
     unsigned int hitArrayPtr1 = (unsigned int)(((uintptr_t)(&hitArray) >> 32) & 0xFFFFFFFF);
 
+	int k=0;
 	while ((t_start < T_SCENE_MAX) && (T > params.transmittance_min)){
+		k++;
 		ray_origin = ray_o + t_start * ray_d;
 		
 		for (int i = 0; i < MAX_BUFFER_SIZE; ++i) {
@@ -71,7 +73,7 @@ extern "C" __global__ void __raygen__rg() {
 				vec3 ray_o_mean3D = ray_o - mean3D;
 				vec3 o_g = SinvR * ray_o_mean3D; 
 				vec3 d_g = SinvR * ray_d;
-				float dot_dg_dg = dot(d_g, d_g);
+				float dot_dg_dg = max(1e-6f, dot(d_g, d_g));
 				float d = -dot(o_g, d_g) / dot_dg_dg;
 
 				vec3 pos = ray_o + d * ray_d;
@@ -79,7 +81,7 @@ extern "C" __global__ void __raygen__rg() {
 				vec3 p_g = SinvR * mean_pos; 
 
 				float G = __expf(-0.5f * dot(p_g, p_g));
-				float alpha = o * G;
+				float alpha = min(0.99f, o * G);
 				if (alpha<params.alpha_min) continue;
 
 				vec3 c = computeColorFromSH_forward(params.deg, ray_d, params.shs + gs_idx * params.max_coeffs);
@@ -97,7 +99,7 @@ extern "C" __global__ void __raygen__rg() {
 					dot(grad_colors, T * c - (C_final - C)) +
 					grad_depths * (T * d - (D_final - D)) + 
 					grad_alpha * (1 - O_final)
-				) / (1 - alpha);
+				) / max(1e-6f, 1 - alpha);
 				computeColorFromSH_backward(params.deg, ray_d, params.shs + gs_idx * params.max_coeffs, dL_dc, params.grad_shs + gs_idx * params.max_coeffs);
 				float dL_do = dL_dalpha * G;
 				float dL_dG = dL_dalpha * o;
@@ -107,18 +109,20 @@ extern "C" __global__ void __raygen__rg() {
 					dL_dpg.x * mean_pos.y, dL_dpg.y * mean_pos.y, dL_dpg.z * mean_pos.y, 
 					dL_dpg.x * mean_pos.z, dL_dpg.y * mean_pos.z, dL_dpg.z * mean_pos.z
 				};
-				// vec3 dL_dmean_pos = transpose(SinvR) * dL_dpg;
-				vec3 dL_dmean_pos = {
-					SinvR[0][0] * dL_dpg.x + SinvR[0][1] * dL_dpg.y + SinvR[0][2] * dL_dpg.z, 
-					SinvR[1][0] * dL_dpg.x + SinvR[1][1] * dL_dpg.y + SinvR[1][2] * dL_dpg.z, 
-					SinvR[2][0] * dL_dpg.x + SinvR[2][1] * dL_dpg.y + SinvR[2][2] * dL_dpg.z
-				};
+
+				
+				vec3 dL_dmean_pos = transpose(SinvR) * dL_dpg;
+				// vec3 dL_dmean_pos = {
+				// 	SinvR[0][0] * dL_dpg.x + SinvR[0][1] * dL_dpg.y + SinvR[0][2] * dL_dpg.z, 
+				// 	SinvR[1][0] * dL_dpg.x + SinvR[1][1] * dL_dpg.y + SinvR[1][2] * dL_dpg.z, 
+				// 	SinvR[2][0] * dL_dpg.x + SinvR[2][1] * dL_dpg.y + SinvR[2][2] * dL_dpg.z
+				// };
 				vec3 dL_dmean3D = dL_dmean_pos;
 
-				dL_dd += -dot(dL_dmean_pos, ray_d);
+				dL_dd -= dot(dL_dmean_pos, ray_d);
 
 				vec3 dL_dog = -dL_dd / dot_dg_dg * d_g;
-				vec3 dL_ddg = -dL_dd / dot_dg_dg * o_g + 2 * dL_dd * dot(o_g, d_g) / (dot_dg_dg * dot_dg_dg) * d_g;
+				vec3 dL_ddg = -dL_dd / dot_dg_dg * o_g + 2 * dL_dd * dot(o_g, d_g) / max(1e-6f, dot_dg_dg * dot_dg_dg) * d_g;
 
 				dL_dSinvR += mat3x3{
 					dL_dog.x * ray_o_mean3D.x, dL_dog.y * ray_o_mean3D.x, dL_dog.z * ray_o_mean3D.x, 
@@ -126,11 +130,12 @@ extern "C" __global__ void __raygen__rg() {
 					dL_dog.x * ray_o_mean3D.z, dL_dog.y * ray_o_mean3D.z, dL_dog.z * ray_o_mean3D.z
 				};
 
-				 dL_dmean3D -= vec3{
-					SinvR[0][0] * dL_dog.x + SinvR[0][1] * dL_dog.y + SinvR[0][2] * dL_dog.z, 
-					SinvR[1][0] * dL_dog.x + SinvR[1][1] * dL_dog.y + SinvR[1][2] * dL_dog.z, 
-					SinvR[2][0] * dL_dog.x + SinvR[2][1] * dL_dog.y + SinvR[2][2] * dL_dog.z
-				};
+				dL_dmean3D -= transpose(SinvR) * dL_dog;
+				//  dL_dmean3D -= vec3{
+				// 	SinvR[0][0] * dL_dog.x + SinvR[0][1] * dL_dog.y + SinvR[0][2] * dL_dog.z, 
+				// 	SinvR[1][0] * dL_dog.x + SinvR[1][1] * dL_dog.y + SinvR[1][2] * dL_dog.z, 
+				// 	SinvR[2][0] * dL_dog.x + SinvR[2][1] * dL_dog.y + SinvR[2][2] * dL_dog.z
+				// };
 
 				dL_dSinvR += mat3x3{
 					dL_ddg.x * ray_d.x, dL_ddg.y * ray_d.x, dL_ddg.z * ray_d.x, 
@@ -143,7 +148,7 @@ extern "C" __global__ void __raygen__rg() {
 
 				float* grad_SinvR = (float*)(params.grad_SinvR + gs_idx);
 				for (int j=0; j<9;++j){
-					atomicAdd(grad_SinvR, dL_dSinvR.d[j]);
+					atomicAdd(grad_SinvR+j, dL_dSinvR.d[j]);
 				}
 
 				if (T < params.transmittance_min){
@@ -153,6 +158,7 @@ extern "C" __global__ void __raygen__rg() {
 		}
 		if (t_curr==0.0f) break;
 		t_start += t_curr;
+		if (k>1000){printf("t_curr:%f\n",t_curr);}
 	}
 
 	params.colors2[idx.x] = C;

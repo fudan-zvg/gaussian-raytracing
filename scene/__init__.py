@@ -12,6 +12,8 @@
 import os
 import random
 import json
+import numpy as np
+import torch
 from utils.system_utils import searchForMaxIteration
 from scene.dataset_readers import sceneLoadTypeCallbacks
 from scene.gaussian_model import GaussianModel
@@ -27,6 +29,7 @@ class Scene:
         :param path: Path to colmap scene main folder.
         """
         self.model_path = args.model_path
+        self.batch_size = args.batch_size
         self.loaded_iter = None
         self.gaussians = gaussians
 
@@ -62,9 +65,9 @@ class Scene:
             with open(os.path.join(self.model_path, "cameras.json"), 'w') as file:
                 json.dump(json_cams, file)
 
-        if shuffle:
-            random.shuffle(scene_info.train_cameras)  # Multi-res consistent random shuffling
-            random.shuffle(scene_info.test_cameras)  # Multi-res consistent random shuffling
+        # if shuffle:
+        #     random.shuffle(scene_info.train_cameras)  # Multi-res consistent random shuffling
+        #     random.shuffle(scene_info.test_cameras)  # Multi-res consistent random shuffling
 
         self.cameras_extent = scene_info.nerf_normalization["radius"]
 
@@ -74,6 +77,23 @@ class Scene:
             print("Loading Test Cameras")
             self.test_cameras[resolution_scale] = cameraList_from_camInfos(scene_info.test_cameras, resolution_scale, args)
 
+        self.train_rays = {}
+        for resolution_scale in resolution_scales:
+            train_rays_o = []
+            train_rays_d = []
+            train_rays_rgb = []
+            for cam in self.train_cameras[resolution_scale]:
+                rays_o, rays_d = cam.get_rays()
+                rays_rgb = cam.get_rays_rgb()
+                train_rays_o.append(rays_o) 
+                train_rays_d.append(rays_d) 
+                train_rays_rgb.append(rays_rgb) 
+            train_rays_o = torch.cat(train_rays_o, dim=0)
+            train_rays_d = torch.cat(train_rays_d, dim=0)
+            train_rays_rgb = torch.cat(train_rays_rgb, dim=0)
+            self.train_rays[resolution_scale] = (train_rays_o, train_rays_d, train_rays_rgb)
+            
+        
         if self.loaded_iter:
             self.gaussians.load_ply(os.path.join(self.model_path,
                                                            "point_cloud",
@@ -91,3 +111,8 @@ class Scene:
 
     def getTestCameras(self, scale=1.0):
         return self.test_cameras[scale]
+    
+    def get_batch_rays(self, scale=1.0):
+        train_rays_o, train_rays_d, train_rays_rgb = self.train_rays[scale]
+        ray_id = np.random.randint(0, train_rays_o.shape[0], self.batch_size)
+        return train_rays_o[ray_id], train_rays_d[ray_id], train_rays_rgb[ray_id]

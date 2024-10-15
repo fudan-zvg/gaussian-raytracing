@@ -63,6 +63,10 @@ namespace optix {
 		return true;
 	}
 
+	void destroy(){
+		OPTIX_CHECK_THROW(optixDeviceContextDestroy(g_optix));
+	}
+
 	class Gas {
 	public:
 		Gas(const Triangle* triangles, int n_triangles, OptixDeviceContext optix, cudaStream_t stream) {
@@ -114,9 +118,9 @@ namespace optix {
 			CUdeviceptr d_triangles = (CUdeviceptr)(uintptr_t)triangles;
 			triangle_input.triangleArray.vertexBuffers = &d_triangles;
 
-			OptixAccelBufferSizes gas_buffer_sizes2;
-			OPTIX_CHECK_THROW(optixAccelComputeMemoryUsage(optix, &accel_options, &triangle_input, 1, &gas_buffer_sizes2));
-			GPUMemory<char> gas_tmp_buffer2{gas_buffer_sizes2.tempSizeInBytes};
+			// OptixAccelBufferSizes gas_buffer_sizes2;
+			OPTIX_CHECK_THROW(optixAccelComputeMemoryUsage(optix, &accel_options, &triangle_input, 1, &gas_buffer_sizes));
+			GPUMemory<char> gas_tmp_buffer2{gas_buffer_sizes.tempSizeInBytes};
 
 			OPTIX_CHECK_THROW(optixAccelBuild(
 				optix,
@@ -125,9 +129,9 @@ namespace optix {
 				&triangle_input,
 				1,           // num build inputs
 				(CUdeviceptr)(uintptr_t)gas_tmp_buffer2.data(),
-				gas_buffer_sizes2.tempSizeInBytes,
+				gas_buffer_sizes.tempSizeInBytes,
 				(CUdeviceptr)(uintptr_t)m_gas_gpu_buffer.data(),
-				gas_buffer_sizes2.outputSizeInBytes,
+				gas_buffer_sizes.outputSizeInBytes,
 				&m_gas_handle, // Output handle to the struct
 				nullptr,       // emitted property list
 				0              // num emitted properties
@@ -155,6 +159,13 @@ public:
 		m_optix.gaussiantrace_forward = std::make_unique<optix::Program<Gaussiantrace_forward>>((const char*)optix_ptx::gaussiantrace_forward_ptx, sizeof(optix_ptx::gaussiantrace_forward_ptx), g_optix);
 		m_optix.gaussiantrace_backward = std::make_unique<optix::Program<Gaussiantrace_backward>>((const char*)optix_ptx::gaussiantrace_backward_ptx, sizeof(optix_ptx::gaussiantrace_backward_ptx), g_optix);
 		// printf("Build OptiX shaders success.\n");
+	}
+
+	~TriangleBvh() {
+		if (m_optix.available) {
+			optix::destroy();
+			printf("OptiX destroyed.\n");
+		}
 	}
 
     void gaussian_trace_forward(

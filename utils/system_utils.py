@@ -12,7 +12,34 @@
 from errno import EEXIST
 from os import makedirs, path
 import os
+import torch
 
+
+class Timing:
+    """
+    From https://github.com/sxyu/svox2/blob/ee80e2c4df8f29a407fda5729a494be94ccf9234/svox2/utils.py#L611
+    
+    Timing environment
+    usage:
+    with Timing("message"):
+        your commands here
+    will print CUDA runtime in ms
+    """
+
+    def __init__(self, name):
+        self.name = name
+
+    def __enter__(self):
+        self.start = torch.cuda.Event(enable_timing=True)
+        self.end = torch.cuda.Event(enable_timing=True)
+        self.start.record()
+
+    def __exit__(self, type, value, traceback):
+        self.end.record()
+        torch.cuda.synchronize()
+        print(self.name, "elapsed", self.start.elapsed_time(self.end), "ms")
+        
+        
 def mkdir_p(folder_path):
     # Creates a directory. equivalent to using mkdir -p on the command line
     try:

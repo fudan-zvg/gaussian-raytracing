@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 import torchvision
-from gaussian_renderer import render, render_trace
+from gaussian_renderer import render, render_image_trace
 from scene import GaussianModel
 from utils.general_utils import safe_state
 from utils.camera_utils import Camera
@@ -331,7 +331,7 @@ if __name__ == '__main__':
     dataset = model.extract(args)
     pipe = pipeline.extract(args)
 
-    gaussians = GaussianModel(dataset.sh_degree)
+    gaussians = GaussianModel(dataset.sh_degree, transmittance_min=0.03)
     
     checkpoints = glob.glob(os.path.join(args.model_path, "chkpnt*.pth"))
     if args.checkpoint is not None or len(checkpoints) > 0:
@@ -380,8 +380,8 @@ if __name__ == '__main__':
 
     windows = GUI(H, W, fovy,
                   c2w=c2w, center=center,
-                  render_fn=render_trace, render_kwargs=render_kwargs,
-                  mode='pbr')
+                  render_fn=render_image_trace, render_kwargs=render_kwargs,
+                  mode='alpha')
 
     while True:
         windows.render()
