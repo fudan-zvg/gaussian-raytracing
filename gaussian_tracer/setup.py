@@ -57,6 +57,7 @@ setup(
                 os.path.join(_src_path, 'include'),
                 os.path.join(_src_path, "build"),
                 os.path.join(_src_path, 'include', 'optix'),
+                os.path.join(_src_path, 'include', 'glm'),
             ],
             extra_compile_args={
                 'cxx': c_flags,

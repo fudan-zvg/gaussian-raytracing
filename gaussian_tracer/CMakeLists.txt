@@ -44,7 +44,7 @@ list(APPEND CUDA_NVCC_FLAGS "--use_fast_math")
 
 set(CMAKE_CUDA_ARCHITECTURES ${TCNN_CUDA_ARCHITECTURES})
 
-list(APPEND INCLUDE_DIRECTORIES "include/optix")
+list(APPEND INCLUDE_DIRECTORIES "include/optix" "include/glm")
 
 ###############################################################################
 # Program

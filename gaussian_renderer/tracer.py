@@ -37,6 +37,7 @@ except Exception as e:
             os.path.join(_src_path, "include"), 
             os.path.join(_src_path, "build"),
             os.path.join(_src_path, "include", "optix"), 
+            os.path.join(_src_path, "include", "glm"), 
         ],
         build_directory=os.path.join(_src_path, 'build'),
         verbose=True)
