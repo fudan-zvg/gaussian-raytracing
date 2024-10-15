@@ -30,8 +30,16 @@
  */
 
 #pragma once
+#include <iostream>
 
-#include <raytracing/common.h>
+#include <cstdint>
+#include <cmath>
+#include <cassert>
+
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <cuda_fp16.h>
+
 #include <atomic>
 #include <stdexcept>
 #include <stdint.h>

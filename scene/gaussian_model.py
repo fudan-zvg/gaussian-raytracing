@@ -409,10 +409,11 @@ class GaussianModel:
         # torch.cuda.empty_cache()
 
     def add_densification_stats(self):
-        self.xyz_gradient_accum += torch.norm(self._xyz.grad, dim=-1, keepdim=True)
-        self.denom += 1
-        # self.xyz_gradient_accum[update_filter] += torch.norm(self._xyz.grad[update_filter], dim=-1, keepdim=True)
-        # self.denom[update_filter] += 1
+        # self.xyz_gradient_accum += torch.norm(self._xyz.grad, dim=-1, keepdim=True)
+        # self.denom += 1
+        update_filter = self._opacity[:, 0].grad != 0
+        self.xyz_gradient_accum[update_filter] += torch.norm(self._xyz.grad[update_filter], dim=-1, keepdim=True)
+        self.denom[update_filter] += 1
         
     def get_boundings(self, alpha_min=0.01):
         mu = self.get_xyz
@@ -439,7 +440,7 @@ class GaussianModel:
         # L[:,2,2] = s[:,2]
 
         # L = R.transpose(-1, -2) @ L
-        return L  # this is SinvR transpose, because in cuda, tmat is column-major
+        return L  # this is SinvR transpose, because in cuda, mat is column-major
 
     def reset_tracer(self):
         """Something wrong, the cuda memory is not cleaned"""

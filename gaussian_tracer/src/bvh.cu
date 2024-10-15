@@ -1,6 +1,4 @@
-#include <raytracing/common.h>
-#include <raytracing/triangle.cuh>
-#include <raytracing/bvh.cuh>
+#include <raytracing/bvh.h>
 
 #include <optix.h>
 #include <optix_stubs.h>
@@ -69,7 +67,7 @@ namespace optix {
 
 	class Gas {
 	public:
-		Gas(const Triangle* triangles, int n_triangles, OptixDeviceContext optix, cudaStream_t stream) {
+		Gas(const float* triangles, int n_triangles, OptixDeviceContext optix, cudaStream_t stream) {
 			// Specify options for the build. We use default options for simplicity.
 			accel_options.buildFlags = OPTIX_BUILD_FLAG_ALLOW_UPDATE;
 			accel_options.operation = OPTIX_BUILD_OPERATION_BUILD;
@@ -111,7 +109,7 @@ namespace optix {
 			));
 		}
 
-		void update(const Triangle* triangles, int n_triangles, OptixDeviceContext optix, cudaStream_t stream) {
+		void update(const float* triangles, int n_triangles, OptixDeviceContext optix, cudaStream_t stream) {
 			// Specify options for the build. We use default options for simplicity.
 			accel_options.operation = OPTIX_BUILD_OPERATION_UPDATE;
 
@@ -169,9 +167,9 @@ public:
 	}
 
     void gaussian_trace_forward(
-		uint32_t n_elements, const vec3* rays_o, const vec3* rays_d, const int* gs_idxs, 
-		const vec3* means3D, const float* opacity, const mat3x3* SinvR, const vec3* shs, 
-		vec3* colors, float* depth, float* alpha, 
+		uint32_t n_elements, const glm::vec3* rays_o, const glm::vec3* rays_d, const int* gs_idxs, 
+		const glm::vec3* means3D, const float* opacity, const glm::mat3x3* SinvR, const glm::vec3* shs, 
+		glm::vec3* colors, float* depth, float* alpha, 
 		const float alpha_min, const float transmittance_min, const int deg, const int max_coeffs, cudaStream_t stream
 	) override {
         m_optix.gaussiantrace_forward->invoke(
@@ -186,11 +184,11 @@ public:
     }
 
 	void gaussian_trace_backward(
-		uint32_t n_elements, const vec3* rays_o, const vec3* rays_d, const int* gs_idxs, 
-		const vec3* means3D, const float* opacity, const mat3x3* SinvR, const vec3* shs, 
-		const vec3* colors, const float* depth, const float* alpha, 
-		vec3* grad_means3D, float* grad_opacity, mat3x3* grad_SinvR, vec3* grad_shs, 
-        const vec3* grad_colors, const float* grad_depth, const float* grad_alpha, vec3* colors2, float* grad_w,
+		uint32_t n_elements, const glm::vec3* rays_o, const glm::vec3* rays_d, const int* gs_idxs, 
+		const glm::vec3* means3D, const float* opacity, const glm::mat3x3* SinvR, const glm::vec3* shs, 
+		const glm::vec3* colors, const float* depth, const float* alpha, 
+		glm::vec3* grad_means3D, float* grad_opacity, glm::mat3x3* grad_SinvR, glm::vec3* grad_shs, 
+        const glm::vec3* grad_colors, const float* grad_depth, const float* grad_alpha,
 		const float alpha_min, const float transmittance_min, const int deg, const int max_coeffs, cudaStream_t stream
 	) override {
         m_optix.gaussiantrace_backward->invoke(
@@ -199,19 +197,19 @@ public:
 				means3D, opacity, SinvR, shs, 
 				colors, depth, alpha, 
 				grad_means3D, grad_opacity, grad_SinvR, grad_shs, 
-				grad_colors, grad_depth, grad_alpha, colors2, grad_w,
+				grad_colors, grad_depth, grad_alpha,
 				alpha_min, transmittance_min, deg, max_coeffs, m_optix.gas->handle()
 			}, 
 			{n_elements, 1, 1}, 
 			stream);
     }
 
-    void build_bvh(const Triangle* triangles, int n_triangles, cudaStream_t stream) override {
+    void build_bvh(const float* triangles, int n_triangles, cudaStream_t stream) override {
 		m_optix.gas = std::make_unique<optix::Gas>(triangles, n_triangles, g_optix, stream);
 		// printf("Build OptiX GAS success.\n");
     }
 
-    void update_bvh(const Triangle* triangles, int n_triangles, cudaStream_t stream) override {
+    void update_bvh(const float* triangles, int n_triangles, cudaStream_t stream) override {
 		m_optix.gas->update(triangles, n_triangles, g_optix, stream);
     }
 

@@ -57,8 +57,7 @@ class Camera(nn.Module):
         self.full_proj_transform = (self.world_view_transform.unsqueeze(0).bmm(self.projection_matrix.unsqueeze(0))).squeeze(0)
         self.camera_center = self.world_view_transform.inverse()[3, :3]
         self.c2w = self.world_view_transform.transpose(0, 1).inverse()
-
-    def get_rays(self):
+        
         v, u = torch.meshgrid(torch.arange(self.image_height, device='cuda'),
                               torch.arange(self.image_width, device='cuda'), indexing="ij")
         focal_x = self.image_width / (2 * np.tan(self.FoVx * 0.5))
@@ -67,11 +66,12 @@ class Camera(nn.Module):
                                   (v - self.image_height / 2 + 0.5) / focal_y,
                                   torch.ones_like(u)], dim=-1).reshape(-1, 3)
         rays_d = rays_d_camera @ self.world_view_transform[:3, :3].T
-        rays_d = F.normalize(rays_d, dim=-1)
-        rays_o =  self.camera_center[None].expand_as(rays_d)
-        return rays_o, rays_d
-        # rays_rgb = self.original_image.permute(1, 2, 0).reshape(-1, 3)
-        # return rays_o, rays_d, rays_rgb
+        self.rays_d = F.normalize(rays_d, dim=-1)
+        self.rays_o = self.camera_center[None].expand_as(self.rays_d)
+        self.rays_rgb = self.original_image.permute(1, 2, 0).reshape(-1, 3)
+
+    def get_rays(self):
+        return self.rays_o, self.rays_d
         
     def get_rays_rgb(self):
         return self.original_image.permute(1, 2, 0).reshape(-1, 3)

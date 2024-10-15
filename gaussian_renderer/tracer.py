@@ -70,22 +70,27 @@ class _GaussianTrace(torch.autograd.Function):
         grad_opacity = torch.zeros_like(opacity)
         grad_SinvR = torch.zeros_like(SinvR)
         grad_shs = torch.zeros_like(shs)
-        colors2 = torch.zeros_like(rays_o)
-        grad_w = torch.zeros_like(means3D[:,0])
         
         # # import pdb;pdb.set_trace()
-        mask = alpha>0
         # (grad_out_color[mask].norm(dim=-1)>0).float().mean()
         
-        # buggy without mask (confused)
-        if mask.any():
-            ctx.bvh.trace_backward(
-                rays_o[mask], rays_d[mask], gs_idxs, means3D, opacity, SinvR, shs, 
-                colors[mask], depth[mask], alpha[mask], 
-                grad_means3D, grad_opacity, grad_SinvR, grad_shs,
-                grad_out_color[mask], grad_out_depth[mask], grad_out_alpha[mask], colors2[mask],grad_w,
-                ctx.alpha_min, ctx.transmittance_min, ctx.deg,
-            )
+        # # buggy without mask (confused)
+        # mask = alpha>0
+        # if mask.any():
+        #     ctx.bvh.trace_backward(
+        #         rays_o[mask], rays_d[mask], gs_idxs, means3D, opacity, SinvR, shs, 
+        #         colors[mask], depth[mask], alpha[mask], 
+        #         grad_means3D, grad_opacity, grad_SinvR, grad_shs,
+        #         grad_out_color[mask], grad_out_depth[mask], grad_out_alpha[mask],
+        #         ctx.alpha_min, ctx.transmittance_min, ctx.deg,
+        #     )
+        ctx.bvh.trace_backward(
+            rays_o, rays_d, gs_idxs, means3D, opacity, SinvR, shs, 
+            colors, depth, alpha, 
+            grad_means3D, grad_opacity, grad_SinvR, grad_shs,
+            grad_out_color, grad_out_depth, grad_out_alpha,
+            ctx.alpha_min, ctx.transmittance_min, ctx.deg,
+        )
         # import trimesh
         # from torchvision.utils import save_image
         # import pdb;pdb.set_trace()

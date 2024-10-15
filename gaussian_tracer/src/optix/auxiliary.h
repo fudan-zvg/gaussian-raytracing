@@ -1,4 +1,12 @@
-#include <raytracing/common.h>
+#pragma once
+#include <iostream>
+#include <cstdint>
+#include <cmath>
+
+#include <cuda.h>
+#include <cuda_runtime.h>
+
+#include <glm/glm.hpp>
 #define MAX_BUFFER_SIZE 16
 #define T_SCENE_MAX 100.0f
 
@@ -23,15 +31,26 @@ __device__ const float SH_C3[] = {
 	-0.5900435899266435f
 };
 
+template <typename T>
+__forceinline__ __host__ __device__ void host_device_swap(T& a, T& b) {
+    T c(a); a=b; b=c;
+}
+
+__forceinline__ __device__ void atomic_add(float* addr, glm::vec3 value) {
+    atomicAdd(addr, value.x);
+    atomicAdd(addr+1, value.y);
+    atomicAdd(addr+2, value.z);
+}
+
 struct HitInfo {
     float t;
     int primIdx;
 };
 
 
-__device__ vec3 computeColorFromSH_forward(int deg, vec3 dir, const vec3* sh)
+__device__ glm::vec3 computeColorFromSH_forward(int deg, glm::vec3 dir, const glm::vec3* sh)
 {
-	vec3 result = SH_C0 * sh[0];
+	glm::vec3 result = SH_C0 * sh[0];
 
 	if (deg > 0)
 	{
@@ -68,7 +87,7 @@ __device__ vec3 computeColorFromSH_forward(int deg, vec3 dir, const vec3* sh)
 	return max(result, 0.0f);
 }
 
-__device__ void computeColorFromSH_backward(const int deg, const vec3 dir, const vec3* sh, const vec3 dL_dcolor, vec3* dL_dsh)
+__device__ void computeColorFromSH_backward(const int deg, const glm::vec3 dir, const glm::vec3* sh, const glm::vec3 dL_dcolor, glm::vec3* dL_dsh)
 {
     atomic_add((float*)dL_dsh, SH_C0 * dL_dcolor);
 	if (deg > 0)

@@ -1,9 +1,7 @@
-#include <raytracing/common.h>
-
+#include "auxiliary.h"
 #include <optix.h>
 
 #include "gaussiantrace_forward.h"
-#include "auxiliary.h"
 
 namespace raytracing {
 
@@ -13,13 +11,12 @@ extern "C" {
 
 extern "C" __global__ void __raygen__rg() {
 	const uint3 idx = optixGetLaunchIndex();
-	const uint3 dim = optixGetLaunchDimensions();
 
-	vec3 ray_o = params.ray_origins[idx.x];
-	vec3 ray_d = params.ray_directions[idx.x];
-	vec3 ray_origin;
+	glm::vec3 ray_o = params.ray_origins[idx.x];
+	glm::vec3 ray_d = params.ray_directions[idx.x];
+	glm::vec3 ray_origin;
 
-	vec3 C = vec3(0.0f, 0.0f, 0.0f);
+	glm::vec3 C = glm::vec3(0.0f, 0.0f, 0.0f);
 	float D = 0.0f, O = 0.0f, T = 1.0f, t_start = 0.0f, t_curr = 0.0f;
 
 	HitInfo hitArray[MAX_BUFFER_SIZE];
@@ -37,8 +34,8 @@ extern "C" __global__ void __raygen__rg() {
 		}
 		optixTrace(
 			params.handle,
-			to_float3(ray_origin),
-			to_float3(ray_d),
+			make_float3(ray_origin.x, ray_origin.y, ray_origin.z),
+			make_float3(ray_d.x, ray_d.y, ray_d.z),
 			0.0f,                // Min intersection distance
 			T_SCENE_MAX,               // Max intersection distance
 			0.0f,                // rayTime -- used for motion blur
@@ -63,23 +60,23 @@ extern "C" __global__ void __raygen__rg() {
 				int gs_idx = params.gs_idxs[primIdx];
 
 				float o = params.opacity[gs_idx];
-				vec3 mean3D = params.means3D[gs_idx];
-				mat3x3 SinvR = params.SinvR[gs_idx];
+				glm::vec3 mean3D = params.means3D[gs_idx];
+				glm::mat3x3 SinvR = params.SinvR[gs_idx];
 
-				vec3 o_g = SinvR * (ray_o - mean3D); 
-				vec3 d_g = SinvR * ray_d;
-				float d = -dot(o_g, d_g) / max(1e-6f, dot(d_g, d_g));
+				glm::vec3 o_g = SinvR * (ray_o - mean3D); 
+				glm::vec3 d_g = SinvR * ray_d;
+				float d = -glm::dot(o_g, d_g) / max(1e-6f, glm::dot(d_g, d_g));
 				// float d = t_start + t_curr;
 
-				vec3 pos = ray_o + d * ray_d;
-				vec3 p_g = SinvR * (mean3D - pos); 
-				float alpha = min(0.99f, o * __expf(-0.5f * dot(p_g, p_g)));
+				glm::vec3 pos = ray_o + d * ray_d;
+				glm::vec3 p_g = SinvR * (mean3D - pos); 
+				float alpha = min(0.99f, o * __expf(-0.5f * glm::dot(p_g, p_g)));
 				// float alpha = 1.0f;
 
 				if (alpha<params.alpha_min) continue;
 				// alpha = 1.0f;
 
-				vec3 c = computeColorFromSH_forward(params.deg, ray_d, params.shs + gs_idx * params.max_coeffs);
+				glm::vec3 c = computeColorFromSH_forward(params.deg, ray_d, params.shs + gs_idx * params.max_coeffs);
 
 				float w = T * alpha;
 				C += w * c;
@@ -123,9 +120,10 @@ extern "C" __global__ void __anyhit__ah() {
 
 	for (int i = 0; i < MAX_BUFFER_SIZE; ++i) {
         if (hitArray[i].t > newHit.t) {
-            HitInfo temp = hitArray[i];
-            hitArray[i] = newHit;
-            newHit = temp;
+            // HitInfo temp = hitArray[i];
+            // hitArray[i] = newHit;
+            // newHit = temp;
+			host_device_swap<HitInfo>(hitArray[i], newHit);
         }
     }
 
