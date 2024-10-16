@@ -334,20 +334,12 @@ if __name__ == '__main__':
     gaussians = GaussianModel(dataset.sh_degree, transmittance_min=0.03)
     
     checkpoints = glob.glob(os.path.join(args.model_path, "chkpnt*.pth"))
-    if args.checkpoint is not None or len(checkpoints) > 0:
-        if args.checkpoint is not None:
-            checkpoint = args.checkpoint
-        else:
-            checkpoint = sorted(checkpoints, key=lambda x: int(x.split("chkpnt")[-1].split(".")[0]))[-1]
-        (model_params, first_iter) = torch.load(checkpoint)
-        gaussians.create_from_ckpt(checkpoint, restore_optimizer=False)
+    if args.iteration == -1:
+        loaded_iter = searchForMaxIteration(os.path.join(args.model_path, "point_cloud"))
     else:
-        if args.iteration == -1:
-            loaded_iter = searchForMaxIteration(os.path.join(args.model_path, "point_cloud"))
-        else:
-            loaded_iter = args.loaded_iter
-        gaussians.load_ply(
-            os.path.join(args.model_path, "point_cloud", "iteration_" + str(loaded_iter), "point_cloud.ply"))
+        loaded_iter = args.loaded_iter
+    gaussians.load_ply(
+        os.path.join(args.model_path, "point_cloud", "iteration_" + str(loaded_iter), "point_cloud.ply"))
     bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
@@ -381,7 +373,7 @@ if __name__ == '__main__':
     windows = GUI(H, W, fovy,
                   c2w=c2w, center=center,
                   render_fn=render_image_trace, render_kwargs=render_kwargs,
-                  mode='alpha')
+                  mode='render')
 
     while True:
         windows.render()
