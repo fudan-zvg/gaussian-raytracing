@@ -114,5 +114,5 @@ class Scene:
     
     def get_batch_rays(self, scale=1.0):
         train_rays_o, train_rays_d, train_rays_rgb = self.train_rays[scale]
-        ray_id = np.random.randint(0, train_rays_o.shape[0], self.batch_size)
+        ray_id = torch.randint(0, train_rays_o.shape[0], (self.batch_size,), device="cuda")
         return train_rays_o[ray_id], train_rays_d[ray_id], train_rays_rgb[ray_id]

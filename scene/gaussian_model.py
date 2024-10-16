@@ -69,6 +69,7 @@ class GaussianModel:
         
         self.gaussian_tracer = GaussianTracer(transmittance_min=transmittance_min)
         self.alpha_min = 1 / 255
+        # self.R = None
 
     def capture(self):
         return (
@@ -418,7 +419,16 @@ class GaussianModel:
     def get_boundings(self, alpha_min=0.01):
         mu = self.get_xyz
         opacity = self.get_opacity
+        
         L = build_scaling_rotation(self.get_scaling, self._rotation)
+        # L = torch.zeros((mu.shape[0], 3, 3), dtype=torch.float, device="cuda")
+        # R = build_rotation(self._rotation)
+        # s = self.get_scaling
+        # L[:, :, 0] = R[:, :, 0] * s[:,0:1]
+        # L[:, :, 1] = R[:, :, 1] * s[:,1:2]
+        # L[:, :, 2] = R[:, :, 2] * s[:,2:3]
+        # self.R = R
+        
         vertices_b = (2 * (opacity/alpha_min).log()).sqrt()[:, None] * (self.unit_icosahedron_vertices[None] @ L.transpose(-1, -2)) + mu[:, None]
         faces_b = self.unit_icosahedron_faces[None] + torch.arange(mu.shape[0], device="cuda")[:, None, None] * 12
         gs_id = torch.arange(mu.shape[0], device="cuda")[:, None].expand(-1, faces_b.shape[1])
@@ -431,15 +441,15 @@ class GaussianModel:
         L = build_scaling_rotation(1 / self.get_scaling, self._rotation)
         
         # s = 1 / self.get_scaling
-        # r = self._rotation
         # L = torch.zeros((s.shape[0], 3, 3), dtype=torch.float, device="cuda")
-        # R = build_rotation(r).transpose(-1, -2)
-
-        # L[:,0,0] = s[:,0]
-        # L[:,1,1] = s[:,1]
-        # L[:,2,2] = s[:,2]
-
-        # L = R.transpose(-1, -2) @ L
+        # if self.R is not None and self.R.requires_grad:
+        #     R = self.R
+        # else:
+        #     R = build_rotation(self._rotation)
+            
+        # L[:, :, 0] = R[:, :, 0] * s[:,0:1]
+        # L[:, :, 1] = R[:, :, 1] * s[:,1:2]
+        # L[:, :, 2] = R[:, :, 2] * s[:,2:3]
         return L  # this is SinvR transpose, because in cuda, mat is column-major
 
     def reset_tracer(self):
@@ -447,7 +457,6 @@ class GaussianModel:
         del self.gaussian_tracer
         self.gaussian_tracer = GaussianTracer(transmittance_min=0.001)
 
-    @torch.no_grad()
     def build_bvh(self):
         # self.reset_tracer()
         vertices_b, faces_b, gs_id = self.get_boundings(alpha_min=self.alpha_min)

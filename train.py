@@ -68,7 +68,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
     for iteration in range(first_iter, opt.iterations + 1):        
         if windows is not None:
             windows.render()
-
+            
         iter_start.record()
 
         gaussians.update_learning_rate(iteration)
@@ -76,11 +76,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         # Every 1000 its we increase the levels of SH up to a maximum degree
         if iteration % 1000 == 0:
             gaussians.oneupSHdegree()
-
-        # Pick a random Camera
-        if not viewpoint_stack:
-            viewpoint_stack = scene.getTrainCameras().copy()
-        viewpoint_cam = viewpoint_stack.pop(randint(0, len(viewpoint_stack)-1))
 
         # Render
         if (iteration - 1) == debug_from:
@@ -109,11 +104,7 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
         
         
         loss.backward()
-        # import pdb;pdb.set_trace()
-        # image.grad.permute(1, 2, 0).reshape(-1, 3)[mask]
-        # (image - gt_image).abs().permute(1, 2, 0).reshape(-1, 3)[mask]
-        # (image - gt_image).abs().sum()
-
+            
         iter_end.record()
 
         with torch.no_grad():
