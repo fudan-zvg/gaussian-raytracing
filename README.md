@@ -18,6 +18,7 @@ pip install submodules/diff-gaussian-rasterization
 pip install submodules/simple-knn
 
 # Install 3D Gaussian Ray Tracer
+cd submodules/gtracer && rm -rf ./build && mkdir build && cd build && cmake .. && make && cd ../ && cd ../../
 pip install submodules/gtracer
 ```
 
