@@ -52,10 +52,11 @@ python gui.py -m outputs/lego
 
 ## 📜 Citation
 If you find this work useful for your research, please cite our github repo:
-
+```bibtex
 @misc{gu2024gaussian,
     title = {3D Gaussian Ray Tracing},
     author = {Gu, Chun and Zhang, Li},
     howpublished = {\url{https://github.com/fudan-zvg/gaussian-raytracing}},
     year = {2024}
 }
+```
