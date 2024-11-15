@@ -5,7 +5,7 @@ An implementation of 3D Gaussian Ray Tracing, inspired by the work "3D Gaussian 
 ## Installation
 
 ```bash
-git clone xxx --recursive
+git clone https://github.com/fudan-zvg/gaussian-raytracing.git --recursive
 
 # This step is same as 3DGS
 conda env create --file environment.yml
