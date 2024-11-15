@@ -1,5 +1,5 @@
 # 3D Gaussian Ray Tracing
-An implementation of 3D Gaussian Ray Tracing, inspired by the work [3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes](https://gaussiantracer.github.io/). This repository is based on our [OptiX-based differentiable 3D Gaussian Ray Tracer](https://github.com/fudan-zvg/gtracer)
+An implementation of 3D Gaussian Ray Tracing, inspired by the work "3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes" (https://gaussiantracer.github.io/). This repository is based on our [OptiX-based differentiable 3D Gaussian Ray Tracer](https://github.com/fudan-zvg/gtracer)
 
 
 ## Installation
@@ -50,11 +50,6 @@ Use a GUI to view the results.
 python gui.py -m outputs/lego
 ```
 
-### Acknowledgement
-
-* Credits to the original [3D Gaussian Ray Tracing](https://gaussiantracer.github.io/) paper.
-
-  
 ## 📜 Citation
 If you find this work useful for your research, please cite our github repo:
 ```bibtex
