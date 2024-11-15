@@ -50,13 +50,12 @@ Use a GUI to view the results.
 python gui.py -m outputs/lego
 ```
 
-## Acknowledgement
-The original 3D Gaussian Ray Tracing paper:
-```
-@article{3dgrt2024,
-    author = {Nicolas Moenne-Loccoz and Ashkan Mirzaei and Or Perel and Riccardo de Lutio and Janick Martinez Esturo and Gavriel State and Sanja Fidler and Nicholas Sharp and Zan Gojcic},
-    title = {3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes},
-    journal = {ACM Transactions on Graphics and SIGGRAPH Asia},
-    year = {2024},
+## 📜 Citation
+If you find this work useful for your research, please cite our github repo:
+
+@misc{gu2024gaussian,
+    title = {3D Gaussian Ray Tracing},
+    author = {Gu, Chun and Zhang, Li},
+    howpublished = {\url{https://github.com/fudan-zvg/gaussian-raytracing}},
+    year = {2024}
 }
-```
