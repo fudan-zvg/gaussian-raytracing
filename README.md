@@ -50,7 +50,7 @@ Use a GUI to view the results.
 python gui.py -m outputs/lego
 ```
 
-### Acknowledgement
+## Acknowledgement
 
 * Credits to the original [3D Gaussian Ray Tracing](https://gaussiantracer.github.io/) paper.
 
