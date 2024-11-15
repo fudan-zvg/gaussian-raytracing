@@ -23,9 +23,6 @@
 #  include <boost/filesystem.hpp>
 # pragma warning(pop)
 
-#include <utility>
-#include <vector>
-
 namespace cv
 {
 	/** Extend OpenCV support for Eigen types. 
@@ -548,15 +545,15 @@ namespace sibr
 		\param img the image to clone
 		\return the pointer
 		*/
-		static ImagePtr fromImg(const ImageType & img) { return ImagePtr(std::make_shared<Image<T_Type, T_NumComp>>(img.clone())); };
+		static ImagePtr fromImg(const ImageType & img) { return ImagePtr(std::make_shared<Image<T_Type, T_NumComp>>(img.clone())); }
 
 		/** Set a new pointee.
 		\param ptr the new image pointer
 		*/
-		void reset(ImageType * ptr) { imPtr.reset(ptr); };
+		void reset(ImageType * ptr) { imPtr.reset(ptr); }
 
 		/** \return the image */
-		Image<T_Type, T_NumComp>*	get() { return imPtr.get(); };
+		typename Image<T_Type, T_NumComp>*	get() { return imPtr.get(); };
 
 		/** Pixel accessor.
 		\param x x coordinate
@@ -585,22 +582,22 @@ namespace sibr
 		typename Image<T_Type, T_NumComp>::Pixel&				operator()(const sibr::Vector2i & xy);
 
 		/** \return the dereferenced image */
-		Image<T_Type, T_NumComp>&								operator * () { return imPtr.operator*(); };
+		typename Image<T_Type, T_NumComp>&						operator * () { return imPtr.operator*(); };
 
 		/** \return the dereferenced image */
-		const Image<T_Type, T_NumComp>&							operator * () const { return imPtr.operator*(); };
+		const typename Image<T_Type, T_NumComp>&				operator * () const { return imPtr.operator*(); };
 
 		/** \return raw pointer to the image */
-		Image<T_Type, T_NumComp>*								operator -> () { return imPtr.operator->(); };
+		typename Image<T_Type, T_NumComp>*						operator -> () { return imPtr.operator->(); };
 
 		/** \return raw pointer to the image */
-		const Image<T_Type, T_NumComp>*							operator -> () const { return imPtr.operator->(); };
+		const typename Image<T_Type, T_NumComp>*				operator -> () const { return imPtr.operator->(); };
 		
 		/** Assign a shared ptr.
 		\param imgShPtr the shared pointer
 		\return a reference to the updated pointer
 		*/ 
-		std::shared_ptr<Image<T_Type, T_NumComp>> & 			operator = (std::shared_ptr<Image<T_Type, T_NumComp>> & imgShPtr) { imPtr = imgShPtr; return &imPtr; };
+		typename std::shared_ptr<Image<T_Type, T_NumComp>> & 			operator = (std::shared_ptr<Image<T_Type, T_NumComp>> & imgShPtr) { imPtr = imgShPtr; return &imPtr; };
 		
 		/** \return true if the image pointer is initialized. */
 		operator bool() { return imPtr.get() != nullptr; };
@@ -1138,9 +1135,7 @@ namespace sibr
 	std::string Image<T_Type, T_NumComp>::pixelStr(const ::sibr::Vector2i & xy)  const {
 		if (isInRange(xy)) {
 			std::stringstream ss;
-//			ss << "( " << operator()(xy).cast<std::conditional<std::is_same_v<T_Type, uchar>, int, T_Type>::type>().transpose() << " )";
-std::cerr << "PIXEL STR PB" << std::endl;
-exit(1);
+			ss << "( " << operator()(xy).cast<std::conditional<std::is_same_v<T_Type, uchar>, int, T_Type>::type>().transpose() << " )";
 			return  ss.str();
 		}
 		return "";
@@ -1223,8 +1218,7 @@ exit(1);
 			return Eigen::Matrix<T_Type, T_NumComp, 1, Eigen::DontAlign>();
 		}
 
-		const sibr::Vector2i cornerPixel = sibr::Vector2f((queryPosition - 0.5f*sibr::Vector2f(1, 1)).unaryExpr([](float f) { return std::floor(f); })).template cast<int>();
-
+		const sibr::Vector2i cornerPixel = (queryPosition - 0.5f*sibr::Vector2f(1, 1)).unaryExpr([](float f) { return std::floor(f); }).cast<int>();
 		const sibr::Vector2f ts = queryPosition - (cornerPixel.cast<float>() + 0.5f*sibr::Vector2f(1, 1));
 
 		const sibr::Vector2i topLeft(0, 0), bottomRight(w() - 1, h() - 1);
@@ -1234,11 +1228,11 @@ exit(1);
 		const sibr::Vector2i mp = sibr::clamp<int, 2>(cornerPixel + sibr::Vector2i(0, 1), topLeft, bottomRight);
 		const sibr::Vector2i pp = sibr::clamp<int, 2>(cornerPixel + sibr::Vector2i(1, 1), topLeft, bottomRight);
 		return (
-			operator()(mm).template cast<float>() * (1.0f - ts[0]) * (1.0f - ts[1]) +
-			operator()(pm).template cast<float>() * ts[0] * (1.0f - ts[1]) +
-			operator()(mp).template cast<float>() * (1.0f - ts[0]) * ts[1] +
-			operator()(pp).template cast<float>() * ts[0] * ts[1]
-			).template cast<T_Type>();
+			operator()(mm).cast<float>() * (1.0f - ts[0]) * (1.0f - ts[1]) +
+			operator()(pm).cast<float>() * ts[0] * (1.0f - ts[1]) +
+			operator()(mp).cast<float>() * (1.0f - ts[0]) * ts[1] +
+			operator()(pp).cast<float>() * ts[0] * ts[1]
+			).cast<T_Type>();
 	}
 
 	template<typename T_Type, unsigned int T_NumComp>
@@ -1270,7 +1264,7 @@ exit(1);
 			return Vector<T_Type, T_NumComp>();
 		}
 
-		const sibr::Vector2i cornerPixel = (queryPosition - 0.5f*sibr::Vector2f(1, 1)).unaryExpr([](float f) { return std::floor(f); }).template cast<int>();
+		const sibr::Vector2i cornerPixel = (queryPosition - 0.5f*sibr::Vector2f(1, 1)).unaryExpr([](float f) { return std::floor(f); }).cast<int>();
 		const sibr::Vector2f ts = queryPosition - (cornerPixel.cast<float>() + 0.5f*sibr::Vector2f(1, 1));
 
 		ColorStack colorsGrid[4];
@@ -1278,7 +1272,7 @@ exit(1);
 		for (int i = 0; i < 4; ++i) {
 			for (int j = 0; j < 4; ++j) {
 				const sibr::Vector2i pixelPosition = cornerPixel + offsets[i][j];
-				colorsGrid[i].col(j) = operator()(sibr::clamp(pixelPosition, topLeft, bottomRight)).template cast<float>();
+				colorsGrid[i].col(j) = operator()(sibr::clamp(pixelPosition, topLeft, bottomRight)).cast<float>();
 			}
 		}
 
@@ -1288,7 +1282,7 @@ exit(1);
 		}
 
 		Vector<float, T_NumComp> resultFloat = monoCubic(ts[1], bs);
-		return (resultFloat.unaryExpr([](float f) { return sibr::clamp(f, 0.0f, sibr::opencv::imageTypeRange<T_Type>()); })).template cast<T_Type>();
+		return (resultFloat.unaryExpr([](float f) { return sibr::clamp(f, 0.0f, sibr::opencv::imageTypeRange<T_Type>()); })).cast<T_Type>();
 	}
 
 	template <typename sibr_T, typename openCV_T, int N>

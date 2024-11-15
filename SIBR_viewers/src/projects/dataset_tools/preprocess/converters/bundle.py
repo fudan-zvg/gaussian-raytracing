@@ -79,33 +79,13 @@ class BundleFeaturePoint:
         # each camera has the following info:
         # (<camId> <sift keypoint> <x> <y>) # (x,y) floating point value with (0,0) center of the img
         self.view_list  = view_list
-        # for colmap conversion
-        self.point2d_index = {}
 
     def remove_cam(self, cam_id):
         for index in range (len(self.view_list)):
             if (self.view_list[index][0] == cam_id):
                 del self.view_list[index]
                 break
-        # fix all subsequent indices
 
-        newlist = []
-        nr1 = len(self.view_list)
-        change = False
-        for vl_item in self.view_list:
-            newitem = list(vl_item)
-            if (vl_item[0] > cam_id):
-#                change = True
-                newitem[0] = newitem[0]-1
-                newlist.append(tuple(newitem))
-            else:
-                newlist.append(vl_item)
-
-        if change:
-            print("NEW : {}\n".format( newlist ))
-            print("OLD : {}\n".format( self.view_list ))
-
-        self.view_list = newlist
 
     def __str__(self):
         first_line      = "{0:g} {1:g} {2:g}\n".format(self.position[0], self.position[1], self.position[2])
@@ -121,7 +101,7 @@ class BundleFeaturePoint:
 
 class Bundle:
 
-    MAX_NR_FEATURE_POINTS = 8000000   # if bundle file has more than this limit, features will not be processed at all
+    MAX_NR_FEATURE_POINTS = 1000000   # if bundle file has more than this limit, features will not be processed at all
 
     def __init__(self, path_to_bundle):
         # read bundle file
@@ -182,13 +162,6 @@ class Bundle:
 
                     # add feature point to the list of feature points contained in the bundle
                     feature_point = BundleFeaturePoint(feature_point_id, feature_point_position, feature_point_color, list_of_view_info)
-                    
-                    # for colmap conversion
-                    for v in list_of_view_info:
-                        if v[0] >= len(self.list_of_cameras):
-                            print("ERROR ", v[0], "  ", len(self.list_of_cameras))
-                        else:
-                            self.list_of_cameras[v[0]].list_of_feature_points.append(feature_point)
 
                     feature_point_id = feature_point_id + 1
 
@@ -272,30 +245,15 @@ class Bundle:
         # update nr_cameras attribute
         self.nr_cameras = len (self.list_of_cameras)
 
-    def save (self, path_to_output_file, new_res=[]):
+    def save (self, path_to_output_file):
         output_file = open(path_to_output_file, "w")
 
         output_file.write(self.header + '\n')
         output_file.write(str(self.nr_cameras) + " " + str(self.nr_feature_points) + '\n')
 
-        if new_res == []:
-            for cam in self.list_of_cameras:
-                output_file.write(str(cam) + '\n')
-        else:
-            # not needed TODO: verify
-            #indx = 0
-            for cam in self.list_of_cameras:
-                #im = self.list_of_input_images[indx]
-                #old_w = im.resolution[0]
-                #old_h = im.resolution[1]
-                #new_focal = cam.focal_length*(min(old_h/new_res[1], old_w/new_res[0]))
-                #print("Old : ", cam.focal_length, " New : " , new_focal)
-                #cam.focal_length = new_focal
-                output_file.write(str(cam) + '\n')
-                #indx = indx + 1
-            
+        for cam in self.list_of_cameras:
+            output_file.write(str(cam) + '\n')
+
         for feature_point in self.list_of_feature_points:
-#            print("Writing ", len(feature_point.view_list) , " FEATURE POINTS " )
-            if len(feature_point.view_list)> 0:
-                output_file.write(str(feature_point) + '\n')
+            output_file.write(str(feature_point) + '\n')
 

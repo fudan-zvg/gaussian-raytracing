@@ -241,7 +241,7 @@ namespace sibr
 		 *\return a reference to the corresponding value.
 		 */
 		T & multiAt(const std::vector<int> & ids) {
-			return this.at(ids.at(ids.size() - N)).multiAt(ids);
+			return at(ids.at(ids.size() - N)).multiAt(ids);
 		}
 
 		/** Getter
@@ -249,7 +249,7 @@ namespace sibr
 		 *\return a const reference to the corresponding value.
 		 */
 		const T & multiAt(const std::vector<int> & ids) const {
-			return this.at(ids.at(ids.size() - N)).multiAt(ids);
+			return at(ids.at(ids.size() - N)).multiAt(ids);
 		}
 
 		/** Get the size along each dimension.
@@ -280,8 +280,8 @@ namespace sibr
 		 */
 		void dimsRecur(std::vector<int> & v) const
 		{
-			v.push_back((int)this.size());
-			this.at(0).dimsRecur(v);
+			v.push_back((int)size());
+			at(0).dimsRecur(v);
 		}
 	};
 
@@ -317,7 +317,7 @@ namespace sibr
 		 *\return a reference to the corresponding value.
 		 */
 		T & multiAt(const std::vector<int> & ids) {
-			return this.at(ids.at(ids.size() - 1));
+			return at(ids.at(ids.size() - 1));
 		}
 
 		/** Getter
@@ -325,13 +325,13 @@ namespace sibr
 		 *\return a const reference to the corresponding value.
 		 */
 		const T & multiAt(const std::vector<int> & ids) const {
-			return this.at(ids.at(ids.size() - 1));
+			return at(ids.at(ids.size() - 1));
 		}
 
 		/**Print the size along each dimension.
 		 */
 		void dimsDisplay() const {
-			std::cout << " [ " << this.size() << " ] " << std::endl;
+			std::cout << " [ " << size() << " ] " << std::endl;
 		}
 
 	protected:
@@ -341,7 +341,7 @@ namespace sibr
 		 */
 		void dimsRecur(std::vector<int> & v) const
 		{
-			v.push_back((int)this.size());
+			v.push_back((int)size());
 		}
 
 	};

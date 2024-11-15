@@ -94,10 +94,6 @@ namespace sibr {
 		}
 	}
 
-	void FPSCamera::setGoalAltitude(const float& goalAltitude) {
-		_goalAltitude = goalAltitude;
-	}
-
 	void FPSCamera::onGUI(const std::string& suffix) {
 		if(ImGui::Begin(suffix.c_str())) {
 			ImGui::PushScaledItemWidth(130);
@@ -169,23 +165,7 @@ namespace sibr {
 				_speedRotFpsCam *= 1.1f;
 			}
 		}
-
-		// Try to keep the same altitude as cameras around.
-		if (_goalAltitude != -1) {
-			sibr::Vector3f worldUp(0., 0., 1.);
-			const sibr::Vector3f custom_forward = _currentCamera.right().cross(worldUp);
-			const sibr::Vector3f translation_right = (_speedFpsCam * move.x()) * _currentCamera.right();
-
-			sibr::Vector3f translation = _speedFpsCam * (move.z() * custom_forward) + translation_right;
-			//const float altitudeDiff = _goalAltitude - _currentCamera.position().z();
-			translation[2] = _goalAltitude - _currentCamera.position().z();
-
-			_currentCamera.translate(translation);
-		}
-		else {
-			_currentCamera.translate(move * _speedFpsCam, _currentCamera.transform());
-		}
-
+		_currentCamera.translate(move*_speedFpsCam, _currentCamera.transform());
 		_currentCamera.rotate(pivot, _currentCamera.transform());
 	}
 

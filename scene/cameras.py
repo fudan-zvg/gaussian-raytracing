@@ -74,7 +74,7 @@ class Camera(nn.Module):
         return self.rays_o, self.rays_d
         
     def get_rays_rgb(self):
-        return self.original_image.permute(1, 2, 0).reshape(-1, 3)
+        return self.rays_rgb
         
     
     

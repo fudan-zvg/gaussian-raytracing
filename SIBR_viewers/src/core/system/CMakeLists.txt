@@ -21,21 +21,12 @@ include_directories(
 	${picojson_INCLUDE_DIRS}
 	${rapidxml_INCLUDE_DIRS}
 )
-if (WIN32)
 target_link_libraries(${PROJECT_NAME}
 	${Boost_LIBRARIES}
 	picojson
 	rapidxml
 	nfd
 )
-else()
-target_link_libraries(${PROJECT_NAME}
-	${Boost_LIBRARIES}
-	picojson
-	rapidxml
-	nativefiledialog
-)
-endif()
 
 add_definitions( -DSIBR_SYSTEM_EXPORTS -DBOOST_ALL_DYN_LINK  )
 

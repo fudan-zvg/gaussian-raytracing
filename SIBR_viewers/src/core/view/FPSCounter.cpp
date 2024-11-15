@@ -62,10 +62,8 @@ namespace sibr
 		ImGui::SetNextWindowBgAlpha(0.5f);
 		if (ImGui::Begin(_name.c_str(), nullptr, _flags))
 		{
-			ImGui::SetWindowFontScale(1.8);
 			const float frameTime = _frameTimeSum / float(SIBR_FPS_SMOOTHING);
 			ImGui::Text("%.2f (%.2f ms)", 1.0f/ frameTime, frameTime*1000.0f);
-			ImGui::SetWindowFontScale(1);
 		}
 
 		ImGui::End();

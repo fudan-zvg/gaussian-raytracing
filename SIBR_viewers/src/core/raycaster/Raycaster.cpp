@@ -81,7 +81,7 @@ namespace sibr
 			SIBR_LOG << "Cannot create an embree scene" << std::endl;
 		else {
 			//SIBR_LOG << "Embree device and scene created" << std::endl;
-			//SIBR_LOG << "Warning Backface culling state : "<< rtcGetDeviceProperty(*g_device, RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED) << std::endl;
+			SIBR_LOG << "Warning Backface culling state : "<< rtcGetDeviceProperty(*g_device, RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED) << std::endl;
 			return true; // Success
 		}
 		return false; // Fail
@@ -335,13 +335,7 @@ namespace sibr
 					},
 					sibr::Vector3f(rh.hit.Ng_x[r], rh.hit.Ng_y[r], rh.hit.Ng_z[r]),
 					RayHit::Primitive{
-#ifdef SIBR_OS_WINDOWS
 						(uint)rh.hit.primID[r] ,(uint)rh.hit.geomID[r],(uint)rh.hit.instID[r]
-#else
-						// Considering RTC_MAX_INSTANCE_LEVEL_COUNT to be 1 (Single-level instancing); see https://www.embree.org/api.html#rtchit
-						(uint)rh.hit.primID[r] ,(uint)rh.hit.geomID[r],(uint)rh.hit.instID[0][r]
-#endif
-					
 					}
 				};
 		}

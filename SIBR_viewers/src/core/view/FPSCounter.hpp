@@ -27,7 +27,7 @@ namespace sibr
 	class SIBR_VIEW_EXPORT FPSCounter
 	{
 	public:
-		typedef std::chrono::time_point<std::chrono::high_resolution_clock> time_point; ///< Time type.
+		typedef std::chrono::time_point<std::chrono::steady_clock> time_point; ///< Time type.
 
 		/** Constructor.
 		\param overlayed if true, the GUI panel is always displayed on top of all others. 

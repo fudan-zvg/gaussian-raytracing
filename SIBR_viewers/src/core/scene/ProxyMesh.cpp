@@ -18,18 +18,11 @@ namespace sibr {
 	void ProxyMesh::loadFromData(const IParseData::Ptr & data)
 	{
 		_proxy.reset(new Mesh());
-		// GD HACK
-		if (boost::filesystem::extension(data->meshPath()) == ".bin") {
-			if (!_proxy->loadSfM(data->meshPath(), data->basePathName())) {
-				SIBR_WRG << "proxy model not found at " << data->meshPath() << std::endl;
-			}
-		}
-		else if (!_proxy->load(data->meshPath(), data->basePathName()) && !_proxy->load(removeExtension(data->meshPath()) + ".ply") && !_proxy->load(removeExtension(data->meshPath()) + ".obj")) {
-			if (!_proxy->loadSfM(data->meshPath(), data->basePathName())) {
-				SIBR_WRG << "proxy model not found at " << data->meshPath() << std::endl;
-			}
+		if (!_proxy->load(data->meshPath(), data->basePathName()  ) && !_proxy->load(removeExtension(data->meshPath()) + ".ply") && !_proxy->load(removeExtension(data->meshPath()) + ".obj")) {
+			SIBR_WRG << "proxy model not found at " << data->meshPath() << std::endl;
 		}
 		if (!_proxy->hasNormals()) {
+			SIBR_WRG << "generating normals for the proxy (no normals found in the proxy file)" << std::endl;
 			_proxy->generateNormals();
 		}
 	}
@@ -46,6 +39,7 @@ namespace sibr {
 		// Used by inputImageRT init() and debug rendering
 		if (!_proxy->hasNormals())
 		{
+			SIBR_WRG << "generating normals for the proxy (no normals found in the proxy file)" << std::endl;
 			_proxy->generateNormals();
 		}
 

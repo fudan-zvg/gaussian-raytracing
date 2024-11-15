@@ -235,8 +235,6 @@ namespace sibr
 		\note Supports OBJ and PLY for now.
 		*/
 		bool	load( const std::string& filename, const std::string& dataset_path = "" );
-		/* test for SfM */
-		bool	loadSfM( const std::string& filename, const std::string& dataset_path = "" );
 		
 		/** Load a scene from a set of mitsuba XML scene files (referencing multiple OBJs/PLYs). 
 		It handles instances (duplicating the geoemtry and applying the per-instance transformation).

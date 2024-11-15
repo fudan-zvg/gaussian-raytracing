@@ -27,20 +27,22 @@ Usage: python wedge_to_vertex_uvs.py -inputMesh <the mesh to convert>
 
 import os, sys
 import argparse
-from utils.commands import runCommand, getMeshlabServer
+from utils.commands import runCommand
 from utils.paths import getMeshlabPath
 
-def convertUVs(inputMesh, outputMesh, meshlabPath = getMeshlabPath()):
+def convertUVs(inputMesh, outputMesh, meshlabPath = getMeshlabPath(), meshlabServerExe = 'meshlabserver.exe'):
     mlxFile = os.path.abspath(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'meshlab/wedge_to_vertex_uvs.mlx'))
 
-    ret = runCommand(getMeshlabServer(meshlabPath), ['-i', inputMesh,
-                                                     '-o', outputMesh,
-                                                     '-m', 'vt',
-                                                     '-s', mlxFile])
+    ret = runCommand(os.path.abspath(os.path.join(meshlabPath, meshlabServerExe)), ['-i', inputMesh,
+                                                                              '-o', outputMesh,
+                                                                              '-m', 'vt',
+                                                                              '-s', mlxFile])
     return ret
 
 def main():
     parser = argparse.ArgumentParser()
+
+    meshlabPath = os.environ['MESHLAB_PATH'] if 'MESHLAB_PATH' in os.environ else "C:\\Program Files\\VCG\\Meshlab"
 
     # common arguments
     parser.add_argument("--inputMesh", type=str, required=True, help="the mesh to simplify")

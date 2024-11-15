@@ -153,7 +153,6 @@ namespace sibr
 		std::cout << s << " : " << std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << " ms" << std::endl;
 	};
 
-	SIBR_SYSTEM_EXPORT std::istream& safeGetline(std::istream& is, std::string& t);
 
 	/*** @} */
 } // namespace sibr

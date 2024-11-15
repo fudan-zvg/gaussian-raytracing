@@ -28,8 +28,7 @@ namespace sibr
 		// If we are asked to, we need to update the viewport at launch.
 		if (updateLayout) {
 			ImGui::SetNextWindowPos(ImVec2(viewport.finalLeft(), viewport.finalTop()));
-			ImGui::SetNextWindowSize(ImVec2(0, 0));
-			ImGui::SetNextWindowContentSize(ImVec2(viewport.finalWidth(), viewport.finalHeight()));
+			ImGui::SetNextWindowSize(ImVec2(viewport.finalWidth(), viewport.finalHeight()));
 		}
 
 		if (::ImGui::Begin(windowTitle.c_str(), NULL, flags))

@@ -81,15 +81,12 @@ namespace sibr {
 		*/
 		virtual void onGUI(const std::string& suffix) override;
 
-		void setGoalAltitude(const float& goalAltitude);
-
 	private:
 
 		float _speedFpsCam, _speedRotFpsCam; ///< Camera speeds.
 		bool _hasBeenInitialized; ///< Has the camera been initialized.
 		sibr::InputCamera _currentCamera; ///< Current camera.
 		bool _useAcceleration; ///< Should the camera accelerate the longer keys are pressed.
-		float _goalAltitude;
 
 		/** Update camera pose based on keys. 
 		\param input user input

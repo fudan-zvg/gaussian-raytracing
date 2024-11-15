@@ -20,7 +20,7 @@ namespace sibr {
 		//return selectCamerasSimpleDist(cams, eye, count);
 	}
 
-	std::vector<uint> IBRBasicUtils::selectCamerasSimpleDist(const std::vector<InputCamera::Ptr>& cams, const sibr::Camera & eye, uint count, const bool& distOnly)
+	std::vector<uint> IBRBasicUtils::selectCamerasSimpleDist(const std::vector<InputCamera::Ptr>& cams, const sibr::Camera & eye, uint count)
 	{
 		std::vector<uint> warped_img_id;
 		std::multimap<float, uint> dist;                 // distance wise closest input cameras
@@ -31,12 +31,8 @@ namespace sibr {
 			{
 				float d = sibr::distance(cams[i]->position(), eye.position());
 				float a = sibr::dot(cams[i]->dir(), eye.dir());
-				if (distOnly) {
-					dist.insert(std::make_pair(d, i));
-				}
-				else if (a > 0.707) {					// cameras with 45 degrees
+				if (a > 0.707)							// cameras with 45 degrees
 					dist.insert(std::make_pair(d, i));	// sort distances in increasing order
-				}
 			}
 		}
 

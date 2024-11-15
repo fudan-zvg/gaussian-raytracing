@@ -60,7 +60,6 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                       render_fn=render_image_trace, render_kwargs=render_kwargs, 
                       mode='render')
         
-    viewpoint_stack = None
     ema_loss_for_log = 0.0
     ema_psnr_for_log = 0.0
     progress_bar = tqdm(range(first_iter, opt.iterations), desc="Training progress")
@@ -83,25 +82,10 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
 
         bg = torch.rand((3), device="cuda") if opt.random_background else background
 
-        # render_pkg = render(viewpoint_cam, gaussians, pipe, bg)
-        # rgb = render_pkg["render"]
-        # rays_rgb = viewpoint_cam.original_image.cuda()
-        # loss = l1_loss(rgb, rays_rgb)
-        
         rays_o, rays_d, rays_rgb = scene.get_batch_rays()
         render_pkg = render_trace(rays_o, rays_d, gaussians, pipe, bg)
         rgb = render_pkg["render"]
         loss = l1_loss(rgb, rays_rgb)
-        
-        # import pdb;pdb.set_trace()
-        # from torchvision.utils import save_image
-        # save_image(image, "test.png")
-
-        # # import pdb;pdb.set_trace()
-        # image.retain_grad()
-        # alpha = render_pkg["alpha"]
-        # mask=alpha.permute(1, 2, 0).reshape(-1)>0
-        
         
         loss.backward()
             
@@ -133,8 +117,8 @@ def training(dataset, opt, pipe, testing_iterations, saving_iterations, checkpoi
                     is_densify = True
                     gaussians.densify_and_prune(opt.densify_grad_threshold, 0.01, scene.cameras_extent)
                     
-
                 if iteration % opt.opacity_reset_interval == 0 or (dataset.white_background and iteration == opt.densify_from_iter):
+                    is_densify = True
                     gaussians.reset_opacity()
 
             # Optimizer step

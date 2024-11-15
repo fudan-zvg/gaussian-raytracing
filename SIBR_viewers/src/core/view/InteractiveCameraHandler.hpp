@@ -124,7 +124,7 @@ namespace sibr {
 		\return the index of the closest camera in the list, or -1
 		\note This function ignores cameras that are not 'active' in the list.
 		*/
-		int	findNearestCamera(const std::vector<InputCamera::Ptr>& inputCameras, const bool& useRotation = true) const;
+		int	findNearestCamera(const std::vector<InputCamera::Ptr>& inputCameras) const;
 
 		/** Toggle camera motion smoothing. */
 		void switchSmoothing() { _shouldSmooth = !_shouldSmooth; SIBR_LOG << "Smoothing " << (_shouldSmooth ? "enabled" : "disabled") << std::endl; }
@@ -204,17 +204,12 @@ namespace sibr {
 		/** \return radius used for trackball*/
 		float & getRadius() { return _radius; }
 
-		float getInterpolatedHeight(const std::vector<InputCamera::Ptr>& inputCameras);
-
 	private:
 
 		int _currentCamId; ///< Current snapped camera ID.
 
 		bool _shouldSmooth; ///< Motion smoothing.
 		bool _shouldSnap; ///< Currently snapping.
-		bool _altitudeInterp = false; ///< Interpolate altitude on the cameras height or not.
-
-		float _bottom_vp = 1.f;
 
 		sibr::FPSCamera _fpsCamera; ///< FPS handler.
 		sibr::Orbit _orbit; ///< Orbit handler.

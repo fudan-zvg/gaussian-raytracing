@@ -35,7 +35,7 @@ namespace sibr{
 	public:
 		RTTextureSize(uint w = 0) : _width(w) {}
 
-		void initSize(uint w, uint h, bool force_aspect_ratio = false);
+		void initSize(uint w, uint h);
 
 		bool isInit() const;
 
@@ -84,7 +84,7 @@ namespace sibr{
 		SIBR_CLASS_PTR(RGBInputTextureArray)
 
 	public:
-		virtual void initRGBTextureArrays(IInputImages::Ptr imgs, int flags = 0, bool force_aspect_ratio=false);
+		virtual void initRGBTextureArrays(IInputImages::Ptr imgs, int flags = 0);
 		const Texture2DArrayRGB::Ptr & getInputRGBTextureArrayPtr() const;
 
 	protected:
@@ -106,10 +106,8 @@ namespace sibr{
 		
 		RenderTargetTextures(uint w = 0) : RTTextureSize(w) {}
 
-		virtual void initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, unsigned int w, unsigned int h, bool faceCull = true);
-		// TODO: remove this, not needed
-		virtual void initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, int texture_width, bool faceCull = true, bool force_aspect_ratio = false);
-		virtual void initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, bool faceCull = true, bool force_aspect_ratio=false);
+		virtual void initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, int texture_width, bool faceCull = true);
+		virtual void initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, bool faceCull = true);
 		virtual void initializeDefaultRenderTargets(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies);
 
 	protected:

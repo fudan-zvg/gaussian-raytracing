@@ -46,7 +46,7 @@ namespace sibr{
 		\return a list of selected camera indices.
 		\warning The number of cameras selected might be lower than count
 		*/
-		static std::vector<uint> selectCamerasSimpleDist(const std::vector<InputCamera::Ptr>& cams, const sibr::Camera& eye, uint count, const bool& distOnly = false);
+		static std::vector<uint> selectCamerasSimpleDist(const std::vector<InputCamera::Ptr>& cams, const sibr::Camera& eye, uint count);
 
 	
 		/** Select cameras based on distance and orientation to a given viewpoint. Cameras with an orientation that is more than 45� off compared to the reference are ignored.

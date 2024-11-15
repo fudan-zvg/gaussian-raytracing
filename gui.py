@@ -333,7 +333,6 @@ if __name__ == '__main__':
 
     gaussians = GaussianModel(dataset.sh_degree, transmittance_min=0.03)
     
-    checkpoints = glob.glob(os.path.join(args.model_path, "chkpnt*.pth"))
     if args.iteration == -1:
         loaded_iter = searchForMaxIteration(os.path.join(args.model_path, "point_cloud"))
     else:
@@ -343,16 +342,6 @@ if __name__ == '__main__':
     bg_color = [1, 1, 1] if dataset.white_background else [0, 0, 0]
     background = torch.tensor(bg_color, dtype=torch.float32, device="cuda")
 
-    # if os.path.exists(os.path.join(args.model_path, "cameras.json")):
-    #     with open(os.path.join(args.model_path, "cameras.json"), 'r') as file:
-    #         cam = JSON_to_camera(json.load(file)[0])
-    #     c2w = cam.c2w.detach().cpu().numpy()
-    #     H, W = int(cam.image_height / args.scale), int(cam.image_width / args.scale)
-    #     fovy = cam.FoVy
-
-    #     if fovy is None:
-    #         fovy = focal2fov(cam.fy, cam.image_height)
-    # else:
     H, W = 800, 800
     fovy = 50 * np.pi / 180
     c2w = np.array([

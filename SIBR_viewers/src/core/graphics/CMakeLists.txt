@@ -23,7 +23,6 @@ include_directories(
 	${Boost_INCLUDE_DIRS}
 	${imgui_INCLUDE_DIRS}
 )
-if(WIN32)
 target_link_libraries(${PROJECT_NAME}
 	${Boost_LIBRARIES}
 	${ASSIMP_LIBRARIES}
@@ -35,19 +34,6 @@ target_link_libraries(${PROJECT_NAME}
 	glfw3
 	sibr_system
 )
-else()
-target_link_libraries(${PROJECT_NAME}
-	${Boost_LIBRARIES}
-	${ASSIMP_LIBRARIES}
-	${GLEW_LIBRARIES}
-	${OPENGL_LIBRARIES}
-	${OpenCV_LIBRARIES}
-	OpenMP::OpenMP_CXX
-	imgui
-	${GLFW_LIBRARY}
-	sibr_system
-)
-endif()
 
 if (NOT WIN32)
 	target_link_libraries(${PROJECT_NAME}

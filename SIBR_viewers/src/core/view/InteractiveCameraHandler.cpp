@@ -92,7 +92,6 @@ namespace sibr {
 	{
 		_raycaster = raycaster;
 		_viewport = viewport;
-		_radius = areaOfInterest.diagonal().norm();
 		// Use the trackball to compute an initial camera.
 		_trackball.fromBoundingBox(areaOfInterest, viewport);
 		fromCamera(_trackball.getCamera(), false);
@@ -105,20 +104,6 @@ namespace sibr {
 			setupInterpolationPath(cams);
 		}
 		// Update the near and far planes.
-
-		sibr::Vector3f center(0, 0, 0);
-		for (const auto& cam : cams) {
-			center += cam->transform().position();
-		}
-		center /= cams.size();
-
-		float avgDist = 0;
-		for (const auto& cam : cams) {
-			avgDist += (cam->transform().position() - center).norm();
-		}
-		avgDist /= cams.size();
-		_radius = avgDist;
-
 		sibr::InputCamera idealCam = *cams[0];
 		if(clippingPlanes[0] < 0.0f || clippingPlanes[1] < 0.0f) {
 			float zFar = -1.0f, zNear = -1.0f;
@@ -242,7 +227,7 @@ namespace sibr {
 
 	}
 
-	int	InteractiveCameraHandler::findNearestCamera(const std::vector<InputCamera::Ptr>& inputCameras, const bool& useRotation) const
+	int	InteractiveCameraHandler::findNearestCamera(const std::vector<InputCamera::Ptr>& inputCameras) const
 	{
 		if (inputCameras.size() == 0)
 			return -1;
@@ -258,11 +243,8 @@ namespace sibr {
 			weights[sortByDistance[cam_id]] = cam_id;
 		}
 
-		if (useRotation) {
-			std::vector<uint> sortByAngle = sibr::IBRBasicUtils::selectCamerasAngleWeight(inputCameras, _currentCamera, numCams);
-			for (uint cam_id = 0; cam_id < sortByAngle.size(); cam_id++) {
-				weights[sortByAngle[cam_id]] += cam_id;
-			}
+		for (uint cam_id = 0; cam_id < sortByAngle.size(); cam_id++) {
+			weights[sortByAngle[cam_id]] += cam_id;
 		}
 
 		std::multimap<int, uint> combinedWeight;
@@ -339,26 +321,9 @@ namespace sibr {
 	void InteractiveCameraHandler::snapToCamera(const int i) {
 		if (!_interpPath.empty()) {
 			unsigned int nearestCam = (i == -1 ? findNearestCamera(_interpPath) : i);
-			nearestCam = sibr::clamp(nearestCam, (unsigned int)(0), (unsigned int)(_interpPath.size() - 1));
+			nearestCam = sibr::clamp(nearestCam, unsigned int(0), unsigned int(_interpPath.size() - 1));
 			fromCamera(*_interpPath[nearestCam], true, false);
 		}
-	}
-
-	float InteractiveCameraHandler::getInterpolatedHeight(const std::vector<InputCamera::Ptr>& inputCameras)
-	{
-		const uint numCams = inputCameras.size();
-		std::vector<uint> sortByDistance = sibr::IBRBasicUtils::selectCamerasSimpleDist(inputCameras, _currentCamera, numCams, true);
-		Vector3f pos0 = 0.5f * (_interpPath[sortByDistance[0]]->position() + _interpPath[sortByDistance[1]]->position());
-		Vector3f pos1 = 0.5f * (_interpPath[sortByDistance[2]]->position() + _interpPath[sortByDistance[3]]->position());
-
-		const float dist = (pos1 - pos0).norm();
-		const float currentDist = (_currentCamera.position() - pos0).norm();
-		const float dist0 = (_currentCamera.position() - pos0).norm();
-		const float dist1 = (_currentCamera.position() - pos1).norm();
-		const float t = dist1 / (dist0 + dist1);
-
-		const float height = t * pos0.z() + (1 - t) * pos1.z(); // (cam1->position().z() - cam0->position().z());
-		return height;
 	}
 
 	void InteractiveCameraHandler::setFPSCameraSpeed(const float speed) {
@@ -389,10 +354,6 @@ namespace sibr {
 				SIBR_LOG << "[Trackball] Display visual guides: " << (_trackball.drawThis ? "on" : "off") << "." << std::endl;
 			}
 		}
-		// only free key
-		else if (input.key().isReleased(sibr::Key::M)) {
-			_cameraRecorder.saveImage("", _currentCamera, _currentCamera.w(), _currentCamera.h());
-		}
 		else if (input.key().isReleased(sibr::Key::Y)) {
 			switchMode(_currentMode == TRACKBALL ? FPS : TRACKBALL);
 		}
@@ -412,7 +373,7 @@ namespace sibr {
 					std::string pathOutView;
 					for (uint i = 0; i < 10; ++i) std::cout << std::endl;
 					std::cout << "Enter path to output the frames:" << std::endl;
-					safeGetline(std::cin, pathOutView);
+					std::getline(std::cin, pathOutView);
 
 					if (!pathOutView.empty()) {
 						_cameraRecorder.saving(pathOutView + "/");
@@ -433,7 +394,7 @@ namespace sibr {
 				int w, h;
 				for (uint i = 0; i < 10; ++i) std::cout << std::endl;
 				std::cout << "Enter a filename for loading a camera path:" << std::endl;
-				safeGetline(std::cin, filename);
+				std::getline(std::cin, filename);
 				std::cout << "Enter width for camera" << std::endl;
 				std::cin >> w;
 				std::cout << "Enter height for camera" << std::endl;
@@ -452,7 +413,7 @@ namespace sibr {
 				std::string filename;
 				for (uint i = 0; i < 10; ++i) std::cout << std::endl;
 				std::cout << "Enter a filename for saving a camera path:" << std::endl;
-				safeGetline(std::cin, filename);
+				std::getline(std::cin, filename);
 				_cameraRecorder.save(filename);
 				_cameraRecorder.saveAsBundle(filename + ".out", _currentCamera.h());
 				_cameraRecorder.saveAsLookAt(filename + ".lookat");
@@ -471,7 +432,7 @@ namespace sibr {
 				std::string filename;
 				for (uint i = 0; i < 10; ++i) std::cout << std::endl;
 				std::cout << "Enter a filename for saving a camera path:" << std::endl;
-				safeGetline(std::cin, filename);
+				std::getline(std::cin, filename);
 				_cameraRecorder.playback();
 				_cameraRecorder.saveAsBundle(filename + ".out", _currentCamera.h());
 				_cameraRecorder.saveAsLookAt(filename + ".lookat");
@@ -505,15 +466,6 @@ namespace sibr {
 				break;
 			case FPS:
 			default:
-
-				if (_altitudeInterp) {
-
-					_fpsCamera.setGoalAltitude(getInterpolatedHeight(_interpPath));
-				}
-				else {
-					_fpsCamera.setGoalAltitude(-1.f);
-				}
-
 				_fpsCamera.update(input, deltaTime);
 				if (_shouldSnap) {
 					_fpsCamera.snap(_interpPath);
@@ -591,10 +543,6 @@ namespace sibr {
 				_currentCamId = findNearestCamera(_interpPath);
 				snapToCamera(_currentCamId);
 			}
-
-			ImGui::SameLine();
-			ImGui::Checkbox("Altitude interp", &_altitudeInterp);
-
 			ImGui::SameLine();
 			if (ImGui::InputInt("Snap to", &_currentCamId, 1, 10)) {
 				_currentCamId = sibr::clamp(_currentCamId, 0, int(_interpPath.size()) - 1);
@@ -708,7 +656,6 @@ namespace sibr {
 							SIBR_LOG << "Saving" << std::endl;
 							_cameraRecorder.save(selectedFile + ".path");
 							_cameraRecorder.saveAsBundle(selectedFile + ".out", _currentCamera.h());
-							_cameraRecorder.saveAsColmap(selectedFile, _currentCamera.h(), _currentCamera.w());
 							_cameraRecorder.saveAsLookAt(selectedFile + ".lookat");
 							if (_fribrExport) {
 								const int height = int(std::floor(1920.0f / _currentCamera.aspect()));
@@ -717,6 +664,8 @@ namespace sibr {
 						}
 					}
 				}
+				
+				
 
 				//ImGui::SameLine();
 				ImGui::Checkbox("Save video (from playing)", (&_saveFrame));

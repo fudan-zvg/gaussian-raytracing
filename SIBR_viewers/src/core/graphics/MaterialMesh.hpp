@@ -556,7 +556,7 @@ namespace sibr
 	// Opacity map function
 	ImageRGB::Ptr MaterialMesh::opacityMap(const std::string& matName) const
 	{
-		std::map<std::basic_string<char>, sibr::ImagePtr<unsigned char, 3> >::const_iterator el = _opacityMaps.find(matName);
+		auto & el = _opacityMaps.find(matName);
 		if (el != _opacityMaps.end()) {
 			return el->second;
 		}
@@ -609,8 +609,7 @@ namespace sibr
 	}
 
 	sibr::ImageRGB::Ptr MaterialMesh::tagsCoveringMap(const std::string& matName) const {
-		std::map<std::basic_string<char>, sibr::ImagePtr<unsigned char, 3> >::const_iterator el = _tagsCoveringMaps.find(matName);
-
+		auto & el = _tagsCoveringMaps.find(matName);
 		if (el != _tagsCoveringMaps.end()) {
 			return el->second;
 		}
@@ -628,8 +627,7 @@ namespace sibr
 
 	ImageRGBA::Ptr MaterialMesh::diffuseMap(const std::string& matName) const
 	{
-		std::map<std::basic_string<char>, sibr::ImagePtr<unsigned char, 4> >::const_iterator el = _diffuseMaps.find(matName);
-
+		auto & el = _diffuseMaps.find(matName);
 		if (el != _diffuseMaps.end()) {
 			return el->second;
 		}

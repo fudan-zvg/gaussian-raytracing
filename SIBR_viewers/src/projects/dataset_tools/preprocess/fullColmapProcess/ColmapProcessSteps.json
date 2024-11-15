@@ -57,7 +57,7 @@
             "command_args": [
                 "image_undistorter",
                 "--image_path", "${path}/images/",
-                "--input_path", "${path}/colmap/sparse/0",
+                "--input_path", "${path}/colmap/sparse/0/",
                 "--output_path", "${path}/colmap/stereo/",
                 "--output_type", "COLMAP"
             ]

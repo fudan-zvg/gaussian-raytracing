@@ -212,20 +212,6 @@ namespace sibr {
 		return *this;
 	}
 
-	MeshData& MeshData::setScale(float s)
-	{
-		// TODO: insérer une instruction return ici
-		scale = s;
-		return *this;
-	}
-
-	MeshData& MeshData::setTransformation(sibr::Matrix4f& tr)
-	{
-		// TODO: insérer une instruction return ici
-		transformation = tr;
-		return *this;
-	}
-
 	MeshData & MeshData::setAlpha(float _alpha) {
 		alpha = _alpha;
 		return *this;
@@ -616,7 +602,7 @@ namespace sibr {
 				ImGui::Checkbox(("##active_" + mesh.name).c_str(), &mesh.active);
 				ImGui::SameLine();
 				if (ImGui::Button(("OnlyMe##" + mesh.name).c_str())) {
-					for (auto other_it = list_meshes.begin(); other_it != list_meshes.end(); ++other_it) {
+					for (auto & other_it = list_meshes.begin(); other_it != list_meshes.end(); ++other_it) {
 						other_it->active = (other_it == mesh_it);
 					}
 				}
@@ -705,7 +691,7 @@ namespace sibr {
 		data.userColor = color;
 		data.depthTest = false;
 
-		return addMeshData(data).setColorMode(MeshData::USER_DEFINED);
+		return addMeshData(data);
 	}
 
 	MeshData & MultiMeshManager::getMeshData(const std::string & name)

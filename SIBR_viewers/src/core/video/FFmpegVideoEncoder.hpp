@@ -83,10 +83,7 @@ namespace sibr {
 		\param frame the frame to encode
 		\return a success flag.
 		*/
-//#define HEADLESS
-#ifndef HEADLESS
 		bool encode(AVFrame *frame);
-#endif 
 
 		bool initWasFine = false; ///< Was the encoder init properly.
 		bool needFree = false; ///< Is the file open.
@@ -96,13 +93,10 @@ namespace sibr {
 		double fps; ///< Framerate.
 		bool _forceResize = false; ///< Resize frames.
 		
-#ifndef HEADLESS
 		AVFrame * frameYUV = NULL; ///< Working frame.
-#endif
 		cv::Mat cvFrameYUV; ///< Working frame data.
 		sibr::Vector2i yuSize; ///< Working size.
 
-#ifndef HEADLESS
 		AVFormatContext* pFormatCtx; ///< Format context.
 		AVOutputFormat* fmt; ///< Output format.
 		AVStream* video_st; ///< Output stream.
@@ -110,7 +104,6 @@ namespace sibr {
 		AVCodec* pCodec; ///< Codec.
 		AVPacket * pkt; ///< Encoding packet.
 		
-#endif
 		static bool ffmpegInitDone; ///< FFMPEG initialization status.
 
 	};

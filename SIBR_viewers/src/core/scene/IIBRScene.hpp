@@ -53,8 +53,6 @@ namespace sibr {
 			bool		images = true; ///< Load images?
 			bool		cameras = true; ///< Load cameras?
 			bool        texture = true; ///< Load texture ?
-
-			SceneOptions() {}
 		};
 
 		/**

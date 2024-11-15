@@ -58,17 +58,17 @@ namespace sibr
 		Window(const std::string & title, const sibr::Vector2i & margins, const WindowArgs & args = {}, const std::string& defaultSettingsFilename = "");
 
 		/** \return a pointer to the underlying GLFW window */
-		GLFWwindow *		GLFW(void);
+		GLFWwindow *  GLFW(void);
 
 		/** Activate the associated graphics context. */
-		void				makeContextCurrent(void);
+		inline void			makeContextCurrent(void);
 		/** \return the context currently in use (represented by a GLFW window) */
-		GLFWwindow *		getContextCurrent(void);
+		inline GLFWwindow *		getContextCurrent(void);
 		/** Deactivate the associated graphics context. */
-		void				makeContextNull(void);
+		inline void			makeContextNull(void);
 
 		/** Flush the graphics pipeline and perform rendering, displaying the result in the abck buffer. */
-		void				swapBuffer(void);
+		inline void			swapBuffer(void);
 
 		/** Reset window settings to default.
 		 */
@@ -126,10 +126,6 @@ namespace sibr
 
 		/** \return true if the window is using V-sync. */
 		bool				isVsynced(void) const;
-
-		/** \return true if the window is enabling GUI. */
-		bool				isGUIEnabled(void) const;
-		
 		/** Toggle V-sync.
 		 *\param vsync if true, framerate will be limited to 60 FPS
 		 *\note When set to false, tearing might be visible.
@@ -137,40 +133,40 @@ namespace sibr
 		void				setVsynced(const bool vsync);
 
 		/** \return the window viewport */
-		const Viewport&		viewport(void) const;
+		const Viewport&	viewport(void) const;
 
 		/** Set the window viewport.
 		 *\param view the new viewport
 		 */
-		void				viewport(const Viewport& view);
+		void			viewport(const Viewport& view);
 
 		// From IRenderTarget
 		/** Get the backbuffer texture ID. unsuported. */
-		GLuint				texture(uint t = 0) const;
+		inline GLuint	texture(uint t = 0) const;
 
 		/** Get the backbuffer texture ID. unsuported. */
-		GLuint				handle(uint t = 0) const;
+		inline GLuint	handle(uint t = 0) const;
 
 		/** \return the window buffer ID (0) */
-		GLuint				fbo(void) const;
+		inline GLuint	fbo(void) const;
 
 		/** Bind the window buffer. */
-		void				bind(void);
+		inline void		bind(void);
 
 		/** Unind the window buffer. */
-		void				unbind(void);
+		inline void		unbind(void);
 
 		/** Clear the window buffer. */
-		void				clear(void);
+		inline void		clear(void);
 
 		/** \return the window buffer width */
-		uint				w(void) const;
+		inline uint		w(void) const;
 
 		/** \return the window buffer height */
-		uint				h(void) const;
+		inline uint		h(void) const;
 
 		/** \return the screens caling factor. */
-		float				scaling() const;
+		inline float	scaling() const;
 		
 		static int			contextId; ///< Last created window context ID (-1 initially).
 
@@ -192,10 +188,8 @@ namespace sibr
 		/// Helper to handle window creation/destruction.
 		struct AutoInitializer
 		{
-			AutoInitializer(const WindowArgs & args = {});
+			AutoInitializer(void);
 			~AutoInitializer(void);
-			
-			const bool			_useGUI; ///< Should ImGui windows be displayed.
 		};
 
 		bool				_shouldClose; ///< Is the window marked as closed.
@@ -214,15 +208,15 @@ namespace sibr
 	};
 
 	///// INLINES /////
-	inline void		Window::makeContextCurrent(void) {
+	void		Window::makeContextCurrent(void) {
 		glfwMakeContextCurrent(_glfwWin.get());
 	}
 
-	inline void		Window::makeContextNull(void) {
+	void		Window::makeContextNull(void) {
 		glfwMakeContextCurrent(0);
 	}
 
-	inline GLFWwindow *		Window::getContextCurrent(void) {
+	GLFWwindow *		Window::getContextCurrent(void) {
 		return glfwGetCurrentContext();
 	}
 
@@ -260,7 +254,7 @@ namespace sibr
 		return (uint)size().y();
 	}
 
-	inline float	Window::scaling() const
+	inline float Window::scaling() const
 	{
 		return _scaling;
 	}

@@ -29,129 +29,9 @@
 #include "core/system/Matrix.hpp"
 #include <set>
 #include <boost/variant/detail/substitute.hpp>
-#include "core/assets/colmapheader.h"
 
 namespace sibr
 {
-	typedef uint32_t image_t;
-	typedef uint32_t camera_t;
-	typedef uint64_t point3D_t;
-	typedef uint32_t point2D_t;
-
-	void ReadPoints3DBinary(const std::string& path, Mesh::Vertices& verts, Mesh::Colors& cols, int& numverts) {
-	  std::ifstream file(path, std::ios::binary);
-	//  CHECK(file.is_open()) << path;
-
-	  const size_t num_points3D = ReadBinaryLittleEndian<uint64_t>(&file);
-	  numverts = num_points3D;
-	  std::cerr << "Num 3D pts " << num_points3D << std::endl;
-	  for (size_t i = 0; i < num_points3D; ++i) {
-	    //class Point3D point3D;
-
-	    const uint64_t point3D_id = ReadBinaryLittleEndian<uint64_t>(&file);
-	  //  num_added_points3D_ = std::max(num_added_points3D_, point3D_id);
-
-	//    point3D.XYZ()(0) = ReadBinaryLittleEndian<double>(&file);
-	//    point3D.XYZ()(1) = ReadBinaryLittleEndian<double>(&file);
-	//    point3D.XYZ()(2) = ReadBinaryLittleEndian<double>(&file);
-	//    point3D.Color(0) = ReadBinaryLittleEndian<uint8_t>(&file);
-	//    point3D.Color(1) = ReadBinaryLittleEndian<uint8_t>(&file);
-	//    point3D.Color(2) = ReadBinaryLittleEndian<uint8_t>(&file);
-	//    point3D.SetError(ReadBinaryLittleEndian<double>(&file));
-
-		double x = ReadBinaryLittleEndian<double>(&file);
-		double y = ReadBinaryLittleEndian<double>(&file);
-		double z = ReadBinaryLittleEndian<double>(&file);
-		Vector3f vert(x,y,z);
-
-		verts.push_back(vert);
-
-		float r = float(ReadBinaryLittleEndian<uint8_t>(&file))/255.f;
-		float g = float(ReadBinaryLittleEndian<uint8_t>(&file))/255.f;
-		float b = float(ReadBinaryLittleEndian<uint8_t>(&file))/255.f;
-
-		Vector3f c(r, g, b);
-
-		cols.push_back(c);
-		double err =  ReadBinaryLittleEndian<double>(&file);
-
-	    const size_t track_length = ReadBinaryLittleEndian<uint64_t>(&file);
-	    //std::cerr << "Track length " << track_length << std::endl;
-		// read and include
-	    for (size_t j = 0; j < track_length; ++j) {
-	      const image_t image_id = ReadBinaryLittleEndian<image_t>(&file);
-	      const point2D_t point2D_idx = ReadBinaryLittleEndian<point2D_t>(&file);
-	      //point3D.Track().AddElement(image_id, point2D_idx);
-	    }
-	    //point3D.Track().Compress();
-
-	    //points3D_.emplace(point3D_id, point3D);
-	  }
-	}
-
-	void ReadPoints3DText(const std::string& path, Mesh::Vertices& verts, Mesh::Vertices& cols) {
-	//  points3D_.clear();
-	  std::ifstream file(path);
-	//  CHECK(file.is_open()) << path;
-	  std::string line;
-	  std::string item;
-	  while (std::getline(file, line)) {
-	    StringTrim(&line);
-	    if (line.empty() || line[0] == '#') {
-	      continue;
-	    }
-	    std::stringstream line_stream(line);
-	    // ID
-	    std::getline(line_stream, item, ' ');
-	    const point3D_t point3D_id = std::stoll(item);
-
-	    // Make sure, that we can add new 3D points after reading 3D points
-	    // without overwriting existing 3D points.
-	    // num_added_points3D_ = std::max(num_added_points3D_, point3D_id);
-
-	    // XYZ
-	    std::getline(line_stream, item, ' ');
-	    std::cerr << "point3D.XYZ(0) = " << std::stold(item) << std::endl;
-
-	    std::getline(line_stream, item, ' ');
-	    std::cerr << "point3D.XYZ(1) = " << std::stold(item) << std::endl;
-
-	    std::getline(line_stream, item, ' ');
-	    std::cerr << "point3D.XYZ(2) = " << std::stold(item) << std::endl;
-
-	    // Color
-	    std::getline(line_stream, item, ' ');
-	    std::cerr << "point3D.Color(0) = " << static_cast<uint8_t>(std::stoi(item)) << std::endl;
-
-	    std::getline(line_stream, item, ' ');
-	    std::cerr << "point3D.Color(1) = " << static_cast<uint8_t>(std::stoi(item)) << std::endl;
-
-	    std::getline(line_stream, item, ' ');
-	    std::cerr << "point3D.Color(2) = " << static_cast<uint8_t>(std::stoi(item)) << std::endl;
-
-	    // ERROR
-	    std::getline(line_stream, item, ' ');
-	    std::cerr << "point3D.SetError(" << std::stold(item) << std::endl;
-
-	    // TRACK
-	    while (!line_stream.eof()) {
-	    //  TrackElement track_el;
-
-	      std::getline(line_stream, item, ' ');
-	      StringTrim(&item);
-	      if (item.empty()) {
-		break;
-	      }
-	      std::cerr << "track_el.image_id = " << std::stoul(item) << std::endl;
-
-	      std::getline(line_stream, item, ' ');
-	      std::cerr << "track_el.point2D_idx = " << std::stoul(item) << std::endl;
-	//      point3D.Track().AddElement(track_el);
-	    }
-	 //   point3D.Track().Compress();
-	  //  points3D_.emplace(point3D_id, point3D);
-	  }
-	}
 
 	Mesh::Mesh(bool withGraphics) : _meshPath("") {
 		if (withGraphics) {
@@ -481,6 +361,7 @@ namespace sibr
 		return false;
 
 	}
+
 	bool	Mesh::load(const std::string& filename, const std::string& dataset_path )
 	{
 		// Does the file exists?
@@ -624,48 +505,6 @@ namespace sibr
 		SIBR_LOG << "Mesh '" << filename << " successfully loaded. " << scene->mNumMeshes << " meshes were loaded with a total of "
 			<< " (" << _triangles.size() << ") faces and "
 			<< " (" << _vertices.size() << ") vertices detected. Init GL ..." << std::endl;
-		SIBR_LOG << "Init GL mesh complete " << std::endl;
-
-		_gl.dirtyBufferGL = true;
-		return true;
-	}
-	
-	bool	Mesh::loadSfM(const std::string& filename, const std::string& dataset_path )
-	{
-		// Does the file exist?
-	
-		std::string fname = dataset_path + "points3D.bin";
-
-		std::cerr << "LOADSFM: Try to open " << fname << std::endl;
-
-		if (!sibr::fileExists(fname)) {
-			SIBR_LOG << "Error: can't load mesh '" << fname << "." << std::endl;
-			return false;
-		}
-		Vertices verts;
-		Colors cols;
-		int numverts;
-
-		ReadPoints3DBinary(fname, verts, cols, numverts);
-		_triangles.clear();
-
-		uint matId = 0;
-
-		_vertices.resize(numverts);
-
-		for (uint i = 0; i < numverts;  ++i)
-				_vertices[i] = verts[i];
-
-		_colors.resize(numverts);
-
-		for (uint i = 0; i < numverts; ++i)
-			_colors[i] = Vector3f(
-				cols[i].x(), cols[i].y(), cols[i].z());
-
-		_meshPath = dataset_path + "/points3D.bin";
-		_renderingOptions.mode = PointRenderMode;
-
-		SIBR_LOG << "SfM Mesh '" << filename << " successfully loaded. " << " (" << _vertices.size() << ") vertices detected. Init GL ..." << std::endl;
 		SIBR_LOG << "Init GL mesh complete " << std::endl;
 
 		_gl.dirtyBufferGL = true;
@@ -1928,15 +1767,15 @@ namespace sibr
 		int n_edges;
 
 		std::string line;
-		safeGetline(stream, line);
-		safeGetline(stream, line);
+		std::getline(stream, line);
+		std::getline(stream, line);
 		std::istringstream iss(line);
 
 		iss >> n_vert >> n_faces >> n_edges;
 
 		_vertices.resize(n_vert);
 		for (int v = 0; v < n_vert; ++v) {
-			safeGetline(stream, line);
+			std::getline(stream, line);
 			std::istringstream lineStream(line);
 
 			lineStream >> _vertices[v][0] >> _vertices[v][1] >> _vertices[v][2];
@@ -1947,7 +1786,7 @@ namespace sibr
 		_triangles.reserve(3 * n_faces);
 		int face_size;
 		for (int t = 0; t < n_faces; ++t) {
-			safeGetline(stream, line);
+			std::getline(stream, line);
 			std::istringstream lineStream(line);
 
 			lineStream >> face_size;

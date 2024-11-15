@@ -14,16 +14,13 @@
 
 namespace sibr {
 
-	void RTTextureSize::initSize(uint w, uint h, bool force_aspect_ratio)
+	void RTTextureSize::initSize(uint w, uint h)
 	{
-		
-		std::cerr << "RTTextureSize::initSize NEW FORCE ASPECT " << force_aspect_ratio << " : " << w << "x" << h << " " << std::endl;
-
 		float aspect;
 		if (_width == 0) { // use full resolution
 			_width = w;
 			_height = h;
-		} else if (!force_aspect_ratio) { // use constrained resolution
+		} else { // use constrained resolution
 			
 			if (w >= h) {
 				aspect = float(w) / float(h);
@@ -35,10 +32,6 @@ namespace sibr {
 				_width = uint(floor(float(_height) * aspect));
 			}
 			
-		}
-		else {
-			if (w >= h) _height = w, _width = h;
-			else _width = w, _height = h;
 		}
 
 		SIBR_LOG << "Rendering resolution: (" << _width << "," << _height << ")" << std::endl;
@@ -73,7 +66,6 @@ namespace sibr {
 
 		for (uint i = 0; i < imgs->inputImages().size(); i++) {
 			if (cams->inputCameras()[i]->isActive()) {
-				std::cerr << "." ;
 				ImageRGB img = std::move(imgs->inputImages()[i]->clone());
 				img.flipH();
 
@@ -94,7 +86,6 @@ namespace sibr {
 				_inputRGBARenderTextures[i]->unbind();
 			}
 		}
-		std::cerr << std::endl; 
 	}
 
 	void RGBDInputTextures::initializeDepthRenderTargets(ICalibratedCameras::Ptr cams, IProxyMesh::Ptr proxies, bool facecull)
@@ -200,11 +191,10 @@ namespace sibr {
 		return _inputDepthMapArrayPtr;
 	}
 
-	void RGBInputTextureArray::initRGBTextureArrays(IInputImages::Ptr imgs, int flags, bool force_aspect_ratio)
+	void RGBInputTextureArray::initRGBTextureArrays(IInputImages::Ptr imgs, int flags)
 	{
 		if (!isInit()) {
-			std::cerr << "RGBInputTextureArray::initRGBTextureArrays NEW FORCE ASPECT " << force_aspect_ratio << std::endl;
-			initSize(imgs->inputImages()[_initActiveCam]->w(), imgs->inputImages()[_initActiveCam]->h(), force_aspect_ratio);
+			initSize(imgs->inputImages()[_initActiveCam]->w(), imgs->inputImages()[_initActiveCam]->h());
 		}
 
 		_inputRGBArrayPtr.reset(new Texture2DArrayRGB(imgs->inputImages(), _width, _height, flags));
@@ -237,25 +227,18 @@ namespace sibr {
 		SIBR_ERR << "No cameras active! Fail to initialize RenderTarget!!" << std::endl;
 	}
 
-	void RenderTargetTextures::initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, int texture_width, bool faceCull, bool force_aspect_ratio)
+	void RenderTargetTextures::initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, int texture_width, bool faceCull)
 	{
 		_width = texture_width;
-		initRGBandDepthTextureArrays(cams, imgs, proxies, textureFlags, faceCull, force_aspect_ratio);
+		initRGBandDepthTextureArrays(cams, imgs, proxies, textureFlags, faceCull);
 	}
 
-	void RenderTargetTextures::initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags,  unsigned int width, unsigned int height, bool faceCull)
-	{
-		initSize(width, height, true);
-		initRGBTextureArrays(imgs, textureFlags, true);
-		initDepthTextureArrays(cams, proxies, faceCull);
-	}
-
-	void RenderTargetTextures::initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, bool faceCull, bool force_aspect_ratio)
+	void RenderTargetTextures::initRGBandDepthTextureArrays(ICalibratedCameras::Ptr cams, IInputImages::Ptr imgs, IProxyMesh::Ptr proxies, int textureFlags, bool faceCull)
 	{
 		if (!isInit()) {
 			initRenderTargetRes(cams);
 		}
-		initRGBTextureArrays(imgs, textureFlags, force_aspect_ratio);
+		initRGBTextureArrays(imgs, textureFlags);
 		initDepthTextureArrays(cams, proxies, faceCull);
 	}
 }

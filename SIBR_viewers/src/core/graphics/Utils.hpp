@@ -34,7 +34,7 @@ namespace sibr
 		const uint8_t g = uint8((std::rand() % 255 + 192) * 0.5f);
 		const uint8_t b = uint8((std::rand() % 255 + 192) * 0.5f);
 		const sibr::Vector3ub output(r, g,b);
-		return output.unaryExpr([](float f) { return f * sibr::opencv::imageTypeRange<T_Type>(); }).template cast<T_Type>();
+		return output.unaryExpr([](float f) { return f * sibr::opencv::imageTypeRange<T_Type>(); }).cast<T_Type>();
 	}
 
 	/** Generate a color for a given scalar score, using the jet color map.
@@ -62,7 +62,7 @@ namespace sibr
 			output.z() = 0.0f;
 		}
 
-		return output.unaryExpr([](float f) { return f * sibr::opencv::imageTypeRange<T_Type>(); }).template cast<T_Type>();
+		return output.unaryExpr([](float f) { return f * sibr::opencv::imageTypeRange<T_Type>(); }).cast<T_Type>();
 	}
 
 	/** Generate a jet color associated to the input probability, as a 3-channels cv::Scalar.

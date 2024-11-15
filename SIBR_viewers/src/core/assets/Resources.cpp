@@ -37,25 +37,19 @@ namespace sibr
 	{
 		_rscPaths.push_back(sibr::getInstallDirectory());
 		std::ifstream rscFile(sibr::getInstallDirectory() + "/ibr_resources.ini");
-
 		if(rscFile.good())
 		{
-			for(std::string line; safeGetline(rscFile, line); )
+			for(std::string line; std::getline(rscFile, line); )
 			{
 				_rscPaths.push_back(line);
 			}
-		}
-		else {
-			std::ifstream rscFile2(sibr::getInstallDirectory() + "/bin/ibr_resources.ini");
-			for(std::string line; safeGetline(rscFile2, line); )
-				_rscPaths.push_back(line);
 		}
 
 		/// \todo WIP: used in prevision to load plugins (TODO: test under linux)
 		std::ifstream pathFile(sibr::getInstallDirectory() + "/ibr_paths.ini");
 		if(pathFile.good())
 		{
-			for(std::string line; safeGetline(pathFile, line); )
+			for(std::string line; std::getline(pathFile, line); )
 			{
 				std::string name    = line.substr(0, line.find("="));
 				std::string value   = line.substr(line.find("=")+1, line.length());
@@ -63,7 +57,7 @@ namespace sibr
 				std::string currentEnv;
 				if(curEnv!=NULL)
 					currentEnv = std::string(curEnv);
-#ifdef SIBR_OS_WINDOWS
+#ifdef _WIN32
 				std::replace(value.begin(), value.end(), '/', '\\'); // linux to windows path
 				char delimiter = ';';
 #else
@@ -91,12 +85,6 @@ namespace sibr
 	std::string Resources::getResourceFilePathName(std::string const & filename, bool & success)
 	{
 		// we assume the first element of _rscPaths if the current dir
-		// Weird bug -- GD: I have no idea why, but if I dont call this the paths dont work under linux
-		std::string installdir = sibr::getInstallDirectory();
-		// someone gave us the correct full path
-		std::ifstream rscFileTest(filename);
-		if (success = rscFileTest.good()) 
-			return filename;
 		for(std::string rscPath : _rscPaths)
 		{
 			std::string filePathName  = sibr::getInstallDirectory() + "/" + rscPath + "/" + filename;

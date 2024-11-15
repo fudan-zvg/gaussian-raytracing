@@ -22,7 +22,7 @@ namespace sibr
 
 		if (data->imgInfos().empty() == false)
 		{
-//			#pragma omp parallel for
+			#pragma omp parallel for
 			for (int i = 0; i < data->imgInfos().size(); ++i) {
 				if (data->activeImages()[i]) {
 					_inputImages[i] = std::make_shared<ImageRGB>();

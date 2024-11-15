@@ -27,7 +27,7 @@ namespace sibr
 
 		typedef std::shared_ptr<InputImages>				Ptr;
 
-		InputImages(){};
+		InputImages::InputImages(){};
 		void												loadFromData(const IParseData::Ptr & data) override;
 		virtual void										loadFromExisting(const std::vector<sibr::ImageRGB::Ptr> & imgs) override;
 		void												loadFromExisting(const std::vector<sibr::ImageRGB> & imgs) override;

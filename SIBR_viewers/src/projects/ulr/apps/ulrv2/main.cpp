@@ -74,7 +74,7 @@ int main(int ac, char** av) {
 	float scene_aspect_ratio = scene_width * 1.0f / scene_height;
 	float rendering_aspect_ratio = rendering_width * 1.0f / rendering_height;
 
-	if ((rendering_width > 0) && !myArgs.force_aspect_ratio ) {
+	if ((rendering_width > 0)) {
 		if (abs(scene_aspect_ratio - rendering_aspect_ratio) > 0.001f) {
 			if (scene_width > scene_height) {
 				rendering_height = rendering_width / scene_aspect_ratio;
@@ -90,14 +90,10 @@ int main(int ac, char** av) {
 	rendering_width = (rendering_width <= 0) ? scene->cameras()->inputCameras()[0]->w() : rendering_width;
 	rendering_height = (rendering_height <= 0) ? scene->cameras()->inputCameras()[0]->h() : rendering_height;
 	Vector2u usedResolution(rendering_width, rendering_height);
-	std::cerr << " USED RES " << usedResolution << " scene w h " << scene_width << " : " << scene_height <<  
-		 " NAME " << scene->cameras()->inputCameras()[0]->name() << std::endl;
 
 	const unsigned int sceneResWidth = usedResolution.x();
 	const unsigned int sceneResHeight = usedResolution.y();
-
-	
-	scene->renderTargets()->initRGBandDepthTextureArrays(scene->cameras(), scene->images(), scene->proxies(), flags, true, myArgs.force_aspect_ratio);
+	scene->renderTargets()->initRGBandDepthTextureArrays(scene->cameras(), scene->images(), scene->proxies(), flags);
 
 	// Create the ULR view.
 	ULRV3View::Ptr	ulrView(new ULRV3View(scene, sceneResWidth, sceneResHeight));
@@ -132,20 +128,18 @@ int main(int ac, char** av) {
 	multiViewManager.addIBRSubView("ULR view", ulrView, usedResolution, ImGuiWindowFlags_ResizeFromAnySide);
 	multiViewManager.addCameraForView("ULR view", generalCamera);
 
-	CHECK_GL_ERROR;
-
-	if (myArgs.offscreen || myArgs.pathFile.get() !=  "" ) {
-		generalCamera->getCameraRecorder().loadPath(myArgs.pathFile.get(), usedResolution.x(), usedResolution.y());
-		generalCamera->getCameraRecorder().recordOfflinePath(myArgs.outPath, multiViewManager.getIBRSubView("ULR view"), "");
-		if( !myArgs.noExit )
-			exit(0);
-	}
-
 	// Top view
 	const std::shared_ptr<sibr::SceneDebugView> topView(new sibr::SceneDebugView(scene, generalCamera, myArgs));
 	multiViewManager.addSubView("Top view", topView, usedResolution);
 
 	CHECK_GL_ERROR;
+
+	if (myArgs.pathFile.get() !=  "" ) {
+		generalCamera->getCameraRecorder().loadPath(myArgs.pathFile.get(), usedResolution.x(), usedResolution.y());
+		generalCamera->getCameraRecorder().recordOfflinePath(myArgs.outPath, multiViewManager.getIBRSubView("ULR view"), "ulr");
+		if( !myArgs.noExit )
+			exit(0);
+	}
 
 	// Main looooooop.
 	while (window.isOpened()) {

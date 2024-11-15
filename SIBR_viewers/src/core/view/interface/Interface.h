@@ -22,8 +22,6 @@
 #include "MeshViewer.h"
 #include <core/view/ViewBase.hpp>
 
-#include <imgui/imgui.h>
-
 //typedef void (*CallBackFunction)(int event, int x, int y, int flags, void* userdata);
 
 namespace sibr {
@@ -236,7 +234,7 @@ namespace sibr {
 
 	public:
 
-		template <typename T_Type, unsigned int T_NumComp>
+		template<typename T_Type, unsigned int T_NumComp>
 		void addImageLayer(const std::vector<sibr::ImagePtr<T_Type, T_NumComp> > & images, const std::string & name = "") {
 			std::vector<sibr::Image<T_Type, T_NumComp> > imgs(images.size());
 			for (int i = 0; i < (int)images.size(); ++i) {
@@ -245,7 +243,7 @@ namespace sibr {
 			addImageLayer(imgs, name);
 		}
 
-		template <typename T_Type, unsigned int T_NumComp>
+		template<typename T_Type, unsigned int T_NumComp>
 		void addImageLayer(const std::vector<sibr::Image<T_Type, T_NumComp> > & images, const std::string & name = "")
 		{
 			
@@ -267,7 +265,8 @@ namespace sibr {
 					imagesPtr.push_back(layerPtrs);
 				}
 				const std::vector<sibr::Image<T_Type, T_NumComp> > & imgs = (scale == 0 ?  images : resized_imgs);
-				auto layer = std::make_shared<sibr::Texture2DArray<T_Type, T_NumComp>>();
+
+				sibr::Texture2DArray<T_Type, T_NumComp>::Ptr layer = std::make_shared<sibr::Texture2DArray<T_Type, T_NumComp>>();
 
 				layer->createFromImages(imgs);
 
@@ -281,13 +280,13 @@ namespace sibr {
 			
 		}
 
-		template <typename T_Type, unsigned int T_NumComp, typename LambdaType>
+		template<typename T_Type, unsigned int T_NumComp, typename LambdaType>
 		void addImageLayerWithLambda(const std::vector<sibr::Image<T_Type, T_NumComp> > & images, LambdaType lambda, const std::string & name = "") {
 			
 			checkNewLayer(images);
 
 			using Lambda_Out_Image_Type = decltype(lambda(images[0]));
-			using Lambda_Out_Type = typename Lambda_Out_Image_Type::Type;
+			using Lambda_Out_Type = Lambda_Out_Image_Type::Type;
 			const int Lambda_Out_N = Lambda_Out_Image_Type::e_NumComp;
 
 			for (int scale = 0; scale < scalingOptions.numScale; ++scale) {
@@ -321,7 +320,7 @@ namespace sibr {
 					imagesPtr.push_back(layerPtrs);
 				}
 
-				typename sibr::Texture2DArray<Lambda_Out_Type, Lambda_Out_N>::Ptr layer = std::make_shared<sibr::Texture2DArray<Lambda_Out_Type, Lambda_Out_N> >();
+				sibr::Texture2DArray<Lambda_Out_Type, Lambda_Out_N>::Ptr layer = std::make_shared<sibr::Texture2DArray<Lambda_Out_Type, Lambda_Out_N> >();
 				layer->createFromImages(lambdaImgs);
 				sibr::ITexture2DArray::Ptr layerBase(layer);
 				imagesLayers[scale].push_back(layerBase);

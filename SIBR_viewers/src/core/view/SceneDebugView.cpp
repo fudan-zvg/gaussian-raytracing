@@ -21,7 +21,7 @@
 namespace sibr
 {
 
-	Mesh::Ptr generateCamFrustum(const InputCamera & cam, float near, float far, bool useCam)
+	Mesh::Ptr generateCamFrustum(const InputCamera & cam, float near, float far)
 	{
 		static const Mesh::Triangles tris = {
 			{0,0,1},{1,1,2},{2,2,3},{3,3,0},
@@ -30,28 +30,16 @@ namespace sibr
 		};
 
 		std::vector<Vector3f> dirs;
-		if (!useCam) {
-			dirs.resize(4);
-			dirs[0] = Vector3f(-1, -0.8, -1);
-			dirs[1] = Vector3f(1, -0.8, -1);
-			dirs[2] = Vector3f(1, 0.8, -1);
-			dirs[3] = Vector3f(-1, 0.8, -1);
-		} else {
-			for (const auto& c : cam.getImageCorners())
-				dirs.push_back(CameraRaycaster::computeRayDir(cam, c.cast<float>() + 0.5f * Vector2f(1, 1)));
-			
+		for (const auto & c : cam.getImageCorners()) {
+			dirs.push_back(CameraRaycaster::computeRayDir(cam, c.cast<float>() + 0.5f*Vector2f(1, 1)));
 		}
-
 		float znear = (near >= 0 ? near : cam.znear());
 		float zfar = (far >= 0 ? far : cam.zfar());
 		Mesh::Vertices vertices;
 		for (int k = 0; k < 2; k++) {
 			float dist = (k == 0 ? znear : zfar);
 			for (const auto & d : dirs) {
-				if (useCam)
-					vertices.push_back(cam.position() + dist * d);
-				else 
-					vertices.push_back(dist * d);
+				vertices.push_back(cam.position() + dist * d);
 			}
 		}
 
@@ -176,7 +164,7 @@ namespace sibr
 	void ImageCamViewer::renderImage(const Camera & eye, const InputCamera & cam,
 		const std::vector<RenderTargetRGBA32F::Ptr> & rts, int cam_id)
 	{
-		const auto quad = generateCamQuadWithUvs(cam, _pathScaling);
+		const auto quad = generateCamQuadWithUvs(cam, _cameraScaling);
 		if (cam_id < rts.size() && rts[cam_id]) {
 			_shader2D.begin();
 			_mvp2D.set(eye.viewproj());
@@ -190,7 +178,7 @@ namespace sibr
 
 	void ImageCamViewer::renderImage(const Camera & eye, const InputCamera & cam, uint tex2Darray_handle, int cam_id)
 	{
-		const auto quad = generateCamQuadWithUvs(cam, _pathScaling);
+		const auto quad = generateCamQuadWithUvs(cam, _cameraScaling);
 		_shaderArray.begin();
 		_mvpArray.set(eye.viewproj());
 		_alphaArray.set(_alphaImage);
@@ -200,60 +188,10 @@ namespace sibr
 		quad->render(true, false, Mesh::FillRenderMode, false, false);
 		_shaderArray.end();
 	}
-	void ImageCamViewer::renderImage(const Camera& eye, const InputCamera& cam, const RenderTargetRGBA32F::Ptr& rt)
-	{
-		const auto quad = generateCamQuadWithUvs(cam, _pathScaling);
-		_shader2D.begin();
-		_mvp2D.set(eye.viewproj());
-		_alpha2D.set(_alphaImage);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, rt->handle());
-		quad->render(true, false, Mesh::FillRenderMode, false, false);
-		_shader2D.end();
-	}
-
-	void ImageCamViewer::updateImgRt(const InputCamera& cam, const sibr::ImageRGBA& img)
-	{
-		uint w = cam.w();
-		uint h = cam.h();
-
-		//Force using image aspect ratio
-		if (cam.w() >= cam.h()) h = cam.w(), w = cam.h();
-		else w = cam.w(), h = cam.h();
-
-		GLShader textureShader;
-		textureShader.init("Texture",
-			loadFile(Resources::Instance()->getResourceFilePathName("texture.vp")),
-			loadFile(Resources::Instance()->getResourceFilePathName("texture.fp")));
-		uint interpFlag = (SIBR_SCENE_LINEAR_SAMPLING & SIBR_SCENE_LINEAR_SAMPLING) ? SIBR_GPU_LINEAR_SAMPLING : 0; // LINEAR_SAMPLING Set to default
-
-		std::cerr << ".";
-		ImageRGBA cloned_img = std::move(img.clone());
-		cloned_img.flipH();
-
-		std::shared_ptr<Texture2DRGBA> rawInputImage(new Texture2DRGBA(cloned_img, interpFlag));
-
-		glViewport(0, 0, w, h);
-		_imgRt.reset(new RenderTargetRGBA32F(w, h, interpFlag));
-		_imgRt->clear();
-		_imgRt->bind();
-
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, rawInputImage->handle());
-
-		//Render texture (mapped to screenquad geometry) in the framebuffer (renderTarget)
-		// so that it matches afterwards the same camera settings when applied as a texture
-		glDisable(GL_DEPTH_TEST);
-		textureShader.begin();
-		RenderUtility::renderScreenQuad();
-		textureShader.end();
-		_imgRt->unbind();
-	}
 
 	SceneDebugView::SceneDebugView(const IIBRScene::Ptr & scene, 
-		const InteractiveCameraHandler::Ptr & camHandler, const BasicDatasetArgs & myArgs, const std::string& imagesPath)
+		const InteractiveCameraHandler::Ptr & camHandler, const BasicDatasetArgs & myArgs)
 	{
-
 		initImageCamShaders();
 		setupLabelsManagerShader();
 
@@ -265,13 +203,7 @@ namespace sibr
 			camera_handler.setupInterpolationPath(_scene->cameras()->inputCameras());
 		}
 
-		_showImages = false;
-		if (directoryExists(imagesPath)) {
-			_images_path = imagesPath;
-		}
-		else {
-			_images_path = "";
-		}
+		_showImages = true;
 
 		const std::string camerasDir = myArgs.dataset_path.get() + "/cameras";
 		if (directoryExists(camerasDir)) {
@@ -298,20 +230,15 @@ namespace sibr
 
 		//Camera stub size
 		if (input.key().isActivated(Key::LeftControl) && input.mouseScroll() != 0.0) {
-			_userCameraScaling = std::max(0.001f, _userCameraScaling + (float)input.mouseScroll() * 0.1f);
+			_cameraScaling = std::max(0.001f, _cameraScaling + (float)input.mouseScroll()*0.1f);
 		}
 		if (input.key().isActivated(Key::LeftControl) && input.key().isReleased(Key::P)) {
 			MeshData & guizmo = getMeshData("guizmo");
 			guizmo.active = !guizmo.active;
 		}
 
-		MeshData & proxy = getMeshData("proxy");
-		if( proxy.meshPtr->triangles().size() == 0 )
-			// SfM Points only
-			proxy.renderMode = Mesh::RenderMode::PointRenderMode;
-
 		if (input.key().isActivated(Key::LeftControl) && input.key().isReleased(Key::Z)) {
-			//MeshData & proxy = getMeshData("proxy");
+			MeshData & proxy = getMeshData("proxy");
 			if (proxy.renderMode == Mesh::RenderMode::FillRenderMode) {
 				proxy.renderMode = Mesh::RenderMode::LineRenderMode;
 			} else {
@@ -321,25 +248,6 @@ namespace sibr
 
 		if (input.key().isReleased(Key::T)) {
 			save();
-		}
-
-		//user camera transform update
-		sibr::Transform3f scaled = _userCurrentCam->getCamera().transform();
-		scaled.scale(_userCameraScaling);
-		getMeshData("scene cam").setTransformation(scaled.matrix());
-
-		// update input camera (path) scales
-		if (_pathScaling != _lastPathScaling) {
-			removeMesh("used cams");
-			_used_cams.reset();
-			_used_cams = std::make_shared<Mesh>();
-			for (const auto& camInfos : _cameras) {
-				if (!camInfos.cam.isActive()) { continue; }
-				(camInfos.highlight ? _used_cams : _non_used_cams)->merge(*generateCamFrustum(camInfos.cam, 0.0f, _pathScaling));
-			}
-			_lastPathScaling = _pathScaling;
-			addMeshAsLines("used cams", _used_cams).setColor({ 0,1,0 }).setDepthTest(true);
-
 		}
 	}
 
@@ -367,16 +275,42 @@ namespace sibr
 		viewport.clear(backgroundColor);
 		viewport.bind();
 
-		renderMeshes();
-		
-		if (_displayImg) {
-			glEnable(GL_BLEND);
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-			//renderFromTex(camera_handler.getCamera(), _cameras[_cameraIdInfoGUI].cam, _imgTex->handle());
-			renderImage(camera_handler.getCamera(), _cameras[_cameraIdInfoGUI].cam, _imgRt);
-			glDisable(GL_BLEND);
+		addMeshAsLines("scene cam", generateCamFrustum(_userCurrentCam->getCamera(), 0.0f, _cameraScaling)).setColor({ 1,0,0 });
+
+		if (_scene) {
+			for (int i = 0; i < (int)_scene->cameras()->inputCameras().size(); ++i) {
+				_cameras[i].highlight =  _scene->cameras()->isCameraUsedForRendering(_scene->cameras()->inputCameras()[i]->id());
+			}
+		}	
+
+		auto used_cams = std::make_shared<Mesh>(), non_used_cams = std::make_shared<Mesh>();
+		for (const auto & camInfos : _cameras) {
+			if (!camInfos.cam.isActive()) { continue; }
+			(camInfos.highlight ? used_cams : non_used_cams)->merge(*generateCamFrustum(camInfos.cam, 0.0f, _cameraScaling));
 		}
 
+		addMeshAsLines("used cams", used_cams).setColor({ 0,1,0 });
+		addMeshAsLines("non used cams", non_used_cams).setColor({ 0,0,1 });
+
+		renderMeshes();
+
+		if (_scene && _showImages) {
+			glEnable(GL_BLEND);
+			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			int cam_id = 0;
+			for (const auto & camInfos : _cameras) {
+				if (camInfos.cam.isActive()) {
+					const auto & scene_rts = _scene->renderTargets();
+					if (scene_rts->getInputRGBTextureArrayPtr()) {
+						renderImage(camera_handler.getCamera(), camInfos.cam, scene_rts->getInputRGBTextureArrayPtr()->handle(), cam_id);
+					} else {
+						renderImage(camera_handler.getCamera(), camInfos.cam, scene_rts->inputImagesRT(), cam_id);
+					}
+				}
+				++cam_id;
+			}
+			glDisable(GL_BLEND);
+		}
 
 		if (_showLabels) {
 			renderLabels(camera_handler.getCamera(), viewport, _cameras);
@@ -440,10 +374,8 @@ namespace sibr
 			}
 
 			ImGui::PushScaledItemWidth(120);
-			ImGui::InputFloat("Input cameras scale", &_pathScaling, 0.1f, 10.0f);
-			ImGui::InputFloat("User camera scale", &_userCameraScaling, 0.1f, 10.0f);
-			_pathScaling = std::max(0.001f, _pathScaling);
-			_userCameraScaling = std::max(0.001f, _userCameraScaling);
+			ImGui::InputFloat("Camera scale", &_cameraScaling, 0.1f, 10.0f);
+			_cameraScaling = std::max(0.001f, _cameraScaling);
 
 			ImGui::Checkbox("Draw labels ", &_showLabels);
 			if (_showLabels) {
@@ -470,37 +402,13 @@ namespace sibr
 			
 			ImGui::SliderInt("Camera ID info", &_cameraIdInfoGUI, 0, static_cast<int>(_cameras.size()) - 1);
 
-			//Snap topView cam to closest input camera in mainView
-			if (ImGui::Button(std::string("Snap to closest").c_str())) {
-				_cameraIdInfoGUI = _userCurrentCam->findNearestCamera(_scene->cameras()->inputCameras());
-				const auto& input_cam = _scene->cameras()->inputCameras()[0];
-
-				auto size = camera_handler.getViewport().finalSize();
-				float ratio_dst = size[0] / size[1];
-				float ratio_src = input_cam->w() / (float)input_cam->h();
-				InputCamera cam = InputCamera(_cameras[_cameraIdInfoGUI].cam, (int)size[0], (int)size[1]);
-
-				if (_displayImg)
-					_displayImg = false;
-
-				if (ratio_src < ratio_dst) {
-					float fov_h = 2 * atan(tan(input_cam->fovy() / 2) * ratio_src / ratio_dst);
-					cam.fovy(fov_h);
-				}
-				else {
-					cam.fovy(input_cam->fovy());
-				}
-
-				//cam.znear(0.0001f);
-				camera_handler.fromCamera(cam, true, true);
-			}
 
 			ImGui::Columns(4); // 0 name | snapto | active| size 
 
 			ImGui::Separator();
 			ImGui::Text("Camera"); ImGui::NextColumn();
 			ImGui::Text("SnapTo"); ImGui::NextColumn();
-			ImGui::Text("alpha"); ImGui::NextColumn();
+			ImGui::Text("Active"); ImGui::NextColumn();
 
 			static std::vector<std::string> cam_info_option_str = { "size", "focal", "fov_y","aspect" };
 			if (ImGui::BeginCombo("Info", cam_info_option_str[_camInfoOption].c_str())) {
@@ -535,43 +443,15 @@ namespace sibr
 						cam.fovy(input_cam->fovy());
 					}
 
-					if (_displayImg)
-						_displayImg = false;
-
-					//cam.znear(0.0001f);
-					camera_handler.fromCamera(cam, true, true);
-				}
-
-				if (_images_path != "") {
-
-					ImGui::SameLine();
-					if (ImGui::Button("DisplayImg##")) {
-
-						if (_imgToFetch != _cameras[_cameraIdInfoGUI].cam.name()) {
-							_imgToFetch = _cameras[_cameraIdInfoGUI].cam.name();
-
-							std::string fullPath = _images_path + "/" + _imgToFetch;
-							sibr::ImageRGBA img;
-
-							if (!fileExists(fullPath)) {
-								fullPath = fullPath.substr(0, fullPath.length() - 3) + "JPG";
-							}
-
-							if (img.load(fullPath)) {
-								updateImgRt(_cameras[_cameraIdInfoGUI].cam, img);
-							}
-						}
-						_displayImg = !_displayImg;
-						//(sibr::Image)img.load(fullPath);
-					}
-
+					cam.znear(0.0001f);
+					camera_handler.fromCamera(cam, true, false);
 				}
 				ImGui::NextColumn();
 
-				ImGui::SliderFloat("Alpha##", &_alphaImage, 0, 1.0);
+				ImGui::Checkbox(("##is_valid" + name).c_str(), &_cameras[_cameraIdInfoGUI].highlight);
 				ImGui::NextColumn();
 
-				const InputCamera & cam = _cameras[_cameraIdInfoGUI].cam;
+				const auto & cam = _cameras[_cameraIdInfoGUI].cam;
 				std::stringstream tmp;
 				switch (_camInfoOption)
 				{
@@ -582,7 +462,7 @@ namespace sibr
 					default: break;
 				}
 				ImGui::Text(tmp.str().c_str());
-				ImGui::NextColumn();
+
 				ImGui::Columns(1);
 			}
 			
@@ -594,21 +474,11 @@ namespace sibr
 		if (_scene) {
 			setupLabelsManagerMeshes(_scene->cameras()->inputCameras());
 			setupMeshes();
-			_user_cam = generateCamFrustum(_userCurrentCam->getCamera(), 0.0f, _userCameraScaling, false);
+
 			_cameras.clear();
-
-			int index = 0;
-			for (const auto& inputCam : _scene->cameras()->inputCameras()) {
-				const bool isUsed = _scene->cameras()->isCameraUsedForRendering(index);
-				_cameras.push_back(CameraInfos(*inputCam, inputCam->id(), isUsed));
-
-				if (inputCam->isActive())
-					(isUsed ? _used_cams : _non_used_cams)->merge(*generateCamFrustum(*inputCam, 0.0f, _pathScaling));
-				index++;
+			for (const auto & inputCam : _scene->cameras()->inputCameras()) {
+				_cameras.push_back(CameraInfos(*inputCam, inputCam->id(), _scene->cameras()->isCameraUsedForRendering(inputCam->id())));
 			}
-			addMeshAsLines("scene cam", _user_cam).setColor({ 1,0,0 }).setDepthTest(true);
-			addMeshAsLines("used cams", _used_cams).setColor({ 0,1,0 }).setDepthTest(true);
-			addMeshAsLines("non used cams", _non_used_cams).setColor({ 0,0,1 }).setDepthTest(true);
 		}
 
 		_snapToImage = 0;
@@ -654,10 +524,10 @@ namespace sibr
 				addMesh("proxy", mp);
 			}
 			else
-				addMesh("proxy", _scene->proxies()->proxyPtr()).setRadiusPoint(2).setDepthTest(false);
+				addMesh("proxy", _scene->proxies()->proxyPtr());
 		}
 		else
-			addMesh("proxy", _scene->proxies()->proxyPtr()).setRadiusPoint(2).setDepthTest(false);
+			addMesh("proxy", _scene->proxies()->proxyPtr());
 
 		// Add a gizmo.
 		addMeshAsLines("guizmo", RenderUtility::createAxisGizmo())

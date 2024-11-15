@@ -7,3 +7,6 @@
 [submodule "SIBR_viewers"]
 	path = SIBR_viewers
 	url = https://gitlab.inria.fr/sibr/sibr_core.git
+[submodule "submodules/gtracer"]
+	path = submodules/gtracer
+	url = https://github.com/fudan-zvg/gtracer.git

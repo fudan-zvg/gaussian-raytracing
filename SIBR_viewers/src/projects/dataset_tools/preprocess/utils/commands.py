@@ -13,31 +13,20 @@
 
 import subprocess
 import os, sys
-from shutil import which
-from utils.paths import getBinariesPath, getColmapPath, getMeshlabPath, getRCPath
+from utils.paths import getBinariesPath, getColmapPath
 
 def getProcess(programName, binaryPath = getBinariesPath()):
     suffixes = [ '', '_msr', '_rwdi', '_d']
 
-    print("BINARIES ", binaryPath)
     for suffix in suffixes:
-        binary = os.path.join(binaryPath, programName + suffix + (".exe" if os.name == 'nt' else ''))
+        binary = os.path.join(binaryPath, programName + suffix + ".exe")
 
-        if os.path.isfile(binary) or which(binary) is not None:
+        if os.path.isfile(binary):
             print("Program '%s' found in '%s'." % (programName, binary))
             return binary
 
-def getRCprocess(binaryPath = getRCPath()):
-    programName = "RealityCapture"
-    binary = os.path.join(binaryPath, programName + ".exe")
-
-    if os.path.isfile(binary):
-        print("Program '%s' found in '%s'." % (programName, binary))
-        return binary
-
-
 def runCommand(binary, command_args):
-#    print("Running process '%s'" % (' '.join([binary, *command_args])))
+    print("Running process '%s'" % (' '.join([binary, *command_args])))
     sys.stdout.flush()
     completedProcess = subprocess.run([binary, *command_args])
 
@@ -51,21 +40,11 @@ def runCommand(binary, command_args):
     return completedProcess
 
 def getColmap(colmapPath = getColmapPath()):
-    colmapBinary = os.path.join(colmapPath, "COLMAP.bat" if os.name == 'nt' else 'colmap')
+    colmapBinary = os.path.join(colmapPath, "COLMAP.bat")
 
-    if os.path.isfile(colmapBinary) or which(colmapBinary) is not None:
+    if os.path.isfile(colmapBinary):
         print("Program '%s' found in '%s'." % (colmapBinary, colmapPath))
         return colmapBinary
     else:
         print("Program '%s' not found in '%s'. Aborting." % (colmapBinary, colmapPath))
-        return None
-
-def getMeshlabServer(meshlabPath = getMeshlabPath()):
-    meshlabserverBinary = os.path.join(meshlabPath, "meshlabserver" + ('.exe' if os.name == 'nt' else ''))
-
-    if os.path.isfile(meshlabserverBinary) or which(meshlabserverBinary) is not None:
-        print("Program '%s' found in '%s'." % (meshlabserverBinary, meshlabPath))
-        return meshlabserverBinary
-    else:
-        print("Program '%s' not found in '%s'. Aborting." % (meshlabserverBinary, meshlabPath))
         return None

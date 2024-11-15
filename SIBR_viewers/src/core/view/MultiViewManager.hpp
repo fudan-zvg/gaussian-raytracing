@@ -382,7 +382,6 @@ namespace sibr
 		float _deltaTime; ///< Elapsed time.
 		bool _showSubViewsGui = true; ///< Show the GUI of the subviews.
 		bool _onPause = false; ///< Paused interaction and update.
-		bool _enableGUI = true; ///< Should the GUI be enabled.
 	};
 
 	/** A multiview manager is a multi-view system that displays its subviews in an OS window.

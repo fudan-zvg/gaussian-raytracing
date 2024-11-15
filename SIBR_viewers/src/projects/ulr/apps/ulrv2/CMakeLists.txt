@@ -30,7 +30,6 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_assets
 	sibr_ulr
 	sibr_renderer
-	sibr_graphics
 )
 set_target_properties(${PROJECT_NAME} PROPERTIES FOLDER "projects/ulr/apps")
 

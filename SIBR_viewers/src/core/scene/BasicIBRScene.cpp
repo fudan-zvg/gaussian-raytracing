@@ -115,7 +115,7 @@ namespace sibr
 
 			if (width == 0) {// default
 				if (_imgs->inputImages()[0]->w() > 1920) {
-					SIBR_LOG << "Limiting width to 1920 for performance; use --texture-width to override" << std::endl;
+					SIBR_LOG << "Limiting width to 1920 for performance; use --texture_width to override" << std::endl;
 					mwidth = 1920;
 				}
 			}
@@ -129,7 +129,7 @@ namespace sibr
 
 			std::vector<InputCamera::Ptr> inCams = _cams->inputCameras();
 			float eps = 0.1f;
-			if (inCams.size() > 0 && (abs(inCams[0]->znear() - 0.1) < eps || abs(inCams[0]->zfar() - 1000.0) < eps || abs(inCams[0]->zfar() - 100.0) < eps) && _proxies->proxy().triangles().size() > 0) {
+			if (inCams.size() > 0 && (abs(inCams[0]->znear() - 0.1) < eps || abs(inCams[0]->zfar() - 1000.0) < eps || abs(inCams[0]->zfar() - 100.0) < eps)) {
 				std::vector<sibr::Vector2f>    nearsFars;
 				CameraRaycaster::computeClippingPlanes(_proxies->proxy(), inCams, nearsFars);
 				_cams->updateNearsFars(nearsFars);

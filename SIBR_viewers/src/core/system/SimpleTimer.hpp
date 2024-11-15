@@ -25,7 +25,7 @@ namespace sibr
 	class Timer
 	{
 	public:
-		typedef std::chrono::time_point<std::chrono::high_resolution_clock> time_point;
+		typedef std::chrono::time_point<std::chrono::steady_clock> time_point;
 		typedef std::chrono::nanoseconds nano;
 		typedef std::chrono::microseconds micro;
 		typedef std::chrono::milliseconds milli;
@@ -79,7 +79,6 @@ namespace sibr
 		{
 			if (!hasStarted) { return std::numeric_limits<double>::max(); }
 			auto toc = std::chrono::high_resolution_clock::now();
-			
 			double deltaTime = 1;
 			if (!getDeltaTime<T>(current_tic, toc, deltaTime)) {
 				std::cout << "[SIBR - Timer] : below time reslution " << std::endl;

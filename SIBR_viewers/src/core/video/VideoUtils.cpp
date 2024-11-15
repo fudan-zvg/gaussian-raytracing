@@ -42,8 +42,7 @@ namespace sibr {
 		video.setCurrentFrame(0);
 		Volume3u volume(video.getNumFrames(), video.getResolution()[0], video.getResolution()[1]);
 		for (int t = 0; t < video.getNumFrames(); ++t) {
-			cv::Mat mat = volume.frame(t);
-			video.getCVvideo() >> mat;
+			video.getCVvideo() >> volume.frame(t);
 		}
 		video.setCurrentFrame(currentFrame);
 		return volume;
@@ -787,7 +786,7 @@ namespace sibr {
 		std::stringstream linestream;
 
 		int angle = 0;
-		while (safeGetline(file, line)) {
+		while (std::getline(file, line)) {
 			if (line.find("rotate") != std::string::npos) {
 				linestream << line;
 				linestream >> tmp >> tmp >> angle;

@@ -36,7 +36,7 @@ namespace sibr
 		\param zfar far value to use for the frustum (if < 0, cam.far() will be used)
 		 \ingroup sibr_view
 		*/
-	Mesh::Ptr SIBR_VIEW_EXPORT generateCamFrustum(const InputCamera & cam, float znear = -1, float zfar = -1, bool useCam = true);
+	Mesh::Ptr SIBR_VIEW_EXPORT generateCamFrustum(const InputCamera & cam, float znear = -1, float zfar = -1);
 
 	/** Generate an accurate camera frustum with a custom color.
 		\param cam camera to visualize as a stub
@@ -137,10 +137,6 @@ namespace sibr
 		 */
 		void renderImage(const Camera & eye, const InputCamera & cam, uint tex2Darray_handle, int cam_id);
 
-		void renderImage(const Camera& eye, const InputCamera& cam, const RenderTargetRGBA32F::Ptr& rt);
-
-		void updateImgRt(const InputCamera& cam, const sibr::ImageRGBA& img);
-
 		GLShader _shader2D;		///< Shader for the 2D separate case.
 		GLShader _shaderArray;  ///< Shader for the texture array case.
 		GLuniform<sibr::Matrix4f>	_mvp2D, _mvpArray; ///< MVP matrix.
@@ -148,15 +144,7 @@ namespace sibr
 		GLuniform<float>			_alphaArray = 1.0f; ///< Opacity.
 		GLuniform<int>				_sliceArray = 1; ///< Slice location (for the texture array case).
 		float						_alphaImage = 0.5f; ///< Opacity shared value.
-
-		RenderTargetRGBA32F::Ptr			_imgRt;
-		float								_userCameraScaling = 3.f; ///< User camera scaling.
-		float								_pathScaling = 0.3f; ///< Input cameras scaling.
-		float								_lastPathScaling = 0.2f;
-		std::string							_imgToFetch = "";
-		uint								_imgTexHandle;
-		bool								_displayImg = false;
-		sibr::Texture2D<unsigned char, 4>* _imgTex = nullptr;
+		float						_cameraScaling = 0.8f; ///< Camera scaling.
 	};
 
 	/** Scene viewer for IBR scenes with a proxy, cameras and input images. 
@@ -177,7 +165,7 @@ namespace sibr
 		 * \param camHandler a camera handler to display as a "user camera"
 		 * \param myArgs dataset arguments (needed to load/save the camera location)
 		 */
-		SceneDebugView(const IIBRScene::Ptr& scene, const InteractiveCameraHandler::Ptr & camHandler, const BasicDatasetArgs& myArgs, const std::string& imagesPath = "");
+		SceneDebugView(const IIBRScene::Ptr& scene, const InteractiveCameraHandler::Ptr & camHandler, const BasicDatasetArgs& myArgs);
 
 		/** Constructor.
 		 * \param scene the scene to display
@@ -268,11 +256,6 @@ namespace sibr
 		bool							_showImages = true; ///< Show the image planes.
 		bool							_showLabels = false; ///< Show camera labels.
 
-		std::string						_images_path;
-		int								_renderingCam; ///< ID of the camera used for rendering
-		Mesh::Ptr						_used_cams = std::make_shared<Mesh>();
-		Mesh::Ptr						_non_used_cams = std::make_shared<Mesh>();
-		Mesh::Ptr						_user_cam = std::make_shared<Mesh>();
 	};
 
 } // namespace

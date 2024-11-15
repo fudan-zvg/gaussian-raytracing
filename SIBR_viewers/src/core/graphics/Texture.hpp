@@ -1334,15 +1334,10 @@ namespace sibr
 	template<typename T_Type, unsigned int T_NumComp>
 	Vector4f	Texture2DArray<T_Type, T_NumComp>::readBackPixel(int i, int x, int y, uint lod) const {
 		Vector4f out;
-//#define HEADLESS
-#ifdef HEADLESS
-		SIBR_ERR << "HEADLESS -- No support for readBackPixel" << std::endl;
-#else
 		glGetTextureSubImage(handle(),
 			lod, x, y, i, 1, 1, 1,
 			GL_RGBA, GL_FLOAT, 4 * sizeof(float), out.data()
 		);
-#endif
 		CHECK_GL_ERROR;
 		for (uint c = T_NumComp; c < 4; ++c) {
 			out[c] = 0;

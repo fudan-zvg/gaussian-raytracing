@@ -11,7 +11,7 @@
 #########################################################
 # Include doxygen documentation target
 #########################################################
-option(BUILD_DOCUMENTATION "build doxygen documentation ('Build' DOCUMENTATION target, and find the compiled docs in install/docs/index.html)" OFF)
+option(BUILD_DOCUMENTATION "build doxygen documentation ('Build' DOCUMENTATION target, and find the compiled docs in install/docs/index.html)" ON)
 if(BUILD_DOCUMENTATION)
 	set(DOXYGEN_REQUIRED_VERSION "1.8.17")
 	find_package(Doxygen)

@@ -675,13 +675,8 @@ namespace sibr
 										nodeTexture->first_attribute("value")->value();
 									sibr::Vector3f colorMaterial;
 									float redComponent, greenComponent, blueComponent;
-#ifdef SIBR_OS_WINDOWS
 									sscanf_s(colorString.c_str(), "%f, %f, %f",
 										&redComponent, &greenComponent, &blueComponent);
-#else
-									sscanf(colorString.c_str(), "%f, %f, %f",
-										&redComponent, &greenComponent, &blueComponent);
-#endif
 									const sibr::ImageRGBA::Pixel color(
 										static_cast<const unsigned char>(redComponent * 255),
 										static_cast<const unsigned char>(greenComponent * 255),

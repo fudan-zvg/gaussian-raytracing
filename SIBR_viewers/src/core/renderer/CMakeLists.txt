@@ -22,7 +22,6 @@ file(GLOB SOURCES "*.cpp" "*.h" "*.hpp" "shaders/*.frag" "shaders/*.vert" "shade
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 include_directories(${Boost_INCLUDE_DIRS} .)
-if(WIN32)
 target_link_libraries(${PROJECT_NAME}
 	${Boost_LIBRARIES}
 	${ASSIMP_LIBRARIES}
@@ -35,20 +34,6 @@ target_link_libraries(${PROJECT_NAME}
 	sibr_assets
 	sibr_scene
 )
-else()
-target_link_libraries(${PROJECT_NAME}
-	${Boost_LIBRARIES}
-	${ASSIMP_LIBRARIES}
-	${GLEW_LIBRARIES}
-	${OPENGL_LIBRARIES}
-	${OpenCV_LIBRARIES}
-	${GLFW_LIBRARY}
-	sibr_system
-	sibr_view
-	sibr_assets
-	sibr_scene
-)
-endif()
 
 add_definitions( -DSIBR_EXP_RENDERER_EXPORTS -DBOOST_ALL_DYN_LINK  )
 

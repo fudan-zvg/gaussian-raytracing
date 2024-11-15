@@ -33,36 +33,19 @@ class TaskPipeline:
 
     def runProcessSteps(self):
         for step in self.steps:
-#            print("RUN STEP ", step)
             if "if" in step and not self.isExpressionValid(step["if"]):
                 print("Nothing to do on step %s. Skipping." % (step["name"]))
                 continue
 
             print("Running step %s..." % step["name"])
-            command_args = []
-            for i in range(5):
-                if "app" in step and "optional_arg"+str(i) in step and self.isExpressionValid(step["optional_arg"+str(i)][0]):
-                    optional_arg = []
-                    for optional_arg in step["optional_arg"+str(i)][1:]:
-#                        print("Parsing... ", optional_arg, " ", updateStringFromDict(optional_arg, self.args))
-                        command_args.append(updateStringFromDict(optional_arg, self.args))
-
             if "app" in step:
-#                print("Parsing command args...")
-                for command_arg in step["command_args"]:
-#                    print("Parsing... ", command_arg, " ", updateStringFromDict(command_arg, self.args))
-                    command_args.append(updateStringFromDict(command_arg, self.args))
-
-                # for optionally quitting
-                if "app" in step and "optional_final_arg" in step and self.isExpressionValid(step["optional_final_arg"][0]):
-                    for command_arg in step["optional_final_arg"][1:]:
-#                        print("Parsing... ", command_arg, " ", updateStringFromDict(command_arg, self.args))
-                        command_args.append(updateStringFromDict(command_arg, self.args))
-
                 if self.args["dry_run"]:
+                    print('command : %s %s' % (self.programs[step["app"]]["path"], ' '.join([updateStringFromDict(command_arg, self.args) for command_arg in step["command_args"]])))
+
                     success = True
                 else:
-                    completedProcess = runCommand(self.programs[step["app"]]["path"], command_args)
+                    completedProcess = runCommand(self.programs[step["app"]]["path"], [updateStringFromDict(command_arg, self.args) for command_arg in step["command_args"]])
+
                     success = completedProcess.returncode == 0
 
             elif "function" in step:
@@ -79,13 +62,10 @@ class TaskPipeline:
                                                                                                  updateStringFromDict(val, self.args)))
                                                                                                     for key, val in step["function_args"].items()])))
                 else:
-                    ret = currentFunction(**{ key: ([updateStringFromDict(item, self.args) for item in val]
+                    currentFunction(**{ key: ([updateStringFromDict(item, self.args) for item in val]
                                                 if type(val) is list else
                                                 updateStringFromDict(val, self.args))
                                                     for key, val in step["function_args"].items() })
-                    if ret != None:
-                        self.args[ret[0]] = ret[1]
-                        print ("After step {}: Setting args[{}]={}".format( step["function"], ret[0] , ret[1], ret[0], self.args[ret[0]]))
 
                 success = True
             else:

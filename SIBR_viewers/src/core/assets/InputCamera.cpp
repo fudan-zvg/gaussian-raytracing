@@ -10,20 +10,14 @@
  */
 
 
+
+
 #include "core/assets/ActiveImageFile.hpp"
 #include "core/assets/InputCamera.hpp"
 #include <boost/algorithm/string.hpp>
 #include <map>
 #include "core/system/String.hpp"
 #include "picojson/picojson.hpp"
-
-
-// Colmap binary stuff
-#include "colmapheader.h"
-typedef uint32_t image_t;
-typedef uint32_t camera_t;
-typedef uint64_t point3D_t;
-typedef uint32_t point2D_t;
 
 #define SIBR_INPUTCAMERA_BINARYFILE_VERSION 10
 #define IBRVIEW_TOPVIEW_SAVEVERSION "version002"
@@ -458,7 +452,7 @@ namespace sibr
 		if (in.is_open())
 		{
 			int i = 0;
-			for (std::string line; safeGetline(in, line); i++)
+			for (std::string line; std::getline(in, line); i++)
 			{
 				int w = 1024, h = 768;
 				if (wh.size() > 0) {
@@ -636,13 +630,9 @@ namespace sibr
 		const std::string camerasListing = colmapSparsePath + "/cameras.txt";
 		const std::string imagesListing = colmapSparsePath + "/images.txt";
 
-		const std::string camerasListing2 = colmapSparsePath + "/cameras.txt2";
-		const std::string imagesListing2 = colmapSparsePath + "/images.txt2";
 
 		std::ifstream camerasFile(camerasListing);
 		std::ifstream imagesFile(imagesListing);
-		std::ofstream camerasFile2(camerasListing2);
-		std::ofstream imagesFile2(imagesListing2);
 		if (!camerasFile.is_open()) {
 			SIBR_ERR << "Unable to load camera colmap file" << std::endl;
 		}
@@ -666,9 +656,7 @@ namespace sibr
 
 		std::map<size_t, CameraParametersColmap> cameraParameters;
 
-		std::map<int, std::vector<std::string>> camidtokens;
-
-		while (safeGetline(camerasFile, line)) {
+		while (std::getline(camerasFile, line)) {
 			if (line.empty() || line[0] == '#') {
 				continue;
 			}
@@ -694,7 +682,6 @@ namespace sibr
 
 			cameraParameters[params.id] = params;
 
-			camidtokens[params.id] = tokens;
 		}
 
 		// Now load the individual images and their extrinsic parameters
@@ -704,8 +691,7 @@ namespace sibr
 			0, 0, -1;
 
 		int camid = 0;
-		int valid = 0;
-		while (safeGetline(imagesFile, line)) {
+		while (std::getline(imagesFile, line)) {
 			if (line.empty() || line[0] == '#') {
 				continue;
 			}
@@ -753,26 +739,11 @@ namespace sibr
 			camera->rotation(sibr::Quaternionf(orientation));
 			camera->znear(zNear);
 			camera->zfar(zFar);
-
-			if (camera->position().x() < 0)
-			{
-				camerasFile2 << ++valid;
-				for (int i = 1; i < camidtokens[id].size(); i++)
-					camerasFile2 << " " << camidtokens[id][i];
-				camerasFile2 << "\n\n";
-
-				imagesFile2<< valid;
-				for (int i = 1; i < tokens.size() - 1; i++)
-					imagesFile2 << " " << tokens[i];
-				imagesFile2 << " " << valid << std::endl;
-				imagesFile2 << "\n\n";
-			}
-
 			cameras.push_back(camera);
 
 			++camid;
 			// Skip the observations.
-			safeGetline(imagesFile, line);
+			std::getline(imagesFile, line);
 		}
 
 
@@ -1321,257 +1292,4 @@ namespace sibr
 
 		file.close();
 	}
-
-	std::vector<InputCamera::Ptr> InputCamera::loadColmapBin(const std::string& colmapSparsePath, const float zNear, const float zFar, const int fovXfovYFlag)
-	{
-		const std::string camerasListing = colmapSparsePath + "/cameras.bin";
-		const std::string imagesListing = colmapSparsePath + "/images.bin";
-
-
-  		std::ifstream camerasFile(camerasListing, std::ios::binary);
-		std::ifstream imagesFile(imagesListing, std::ios::binary);
-
-		if (!camerasFile.is_open()) {
-			SIBR_ERR << "Unable to load camera colmap file" << camerasListing << std::endl;
-		}
-		if (!imagesFile.is_open()) {
-			SIBR_WRG << "Unable to load images colmap file" << imagesListing << std::endl;
-		}
-
-		std::vector<InputCamera::Ptr> cameras;
-
-		std::string line;
-
-		struct CameraParametersColmap {
-			size_t id;
-			size_t width;
-			size_t height;
-			float  fx;
-			float  fy;
-			float  dx;
-			float  dy;
-		};
-
-		std::map<size_t, CameraParametersColmap> cameraParameters;
-  		const size_t num_cameras = ReadBinaryLittleEndian<uint64_t>(&camerasFile);
-
-  		for (size_t i = 0; i < num_cameras ; ++i) {
-
-			CameraParametersColmap params;
-
-			params.id = ReadBinaryLittleEndian<uint32_t>(&camerasFile);
-			int model_id = ReadBinaryLittleEndian<int>(&camerasFile);
-			params.width = ReadBinaryLittleEndian<uint64_t>(&camerasFile);
-			params.height = ReadBinaryLittleEndian<uint64_t>(&camerasFile);
-			std::vector<double> Params(4);
-
-    			ReadBinaryLittleEndian<double>(&camerasFile, &Params);
-			params.fx = float(Params[0]);
-			params.fy = float(Params[1]);
-			params.dx = float(Params[2]);
-			params.dy = float(Params[3]);
-			cameraParameters[params.id] = params;
-		}
-
-		// Now load the individual images and their extrinsic parameters
-		sibr::Matrix3f converter;
-		converter << 1, 0, 0,
-			0, -1, 0,
-			0, 0, -1;
-
-  		const size_t num_reg_images = ReadBinaryLittleEndian<uint64_t>(&imagesFile);
-		for (size_t i = 0; i < num_reg_images; ++i) {
-
-			uint	    cId = ReadBinaryLittleEndian<image_t>(&imagesFile);
-			float       qw = float(ReadBinaryLittleEndian<double>(&imagesFile));
-			float       qx = float(ReadBinaryLittleEndian<double>(&imagesFile)) ;
-			float       qy = float(ReadBinaryLittleEndian<double>(&imagesFile)) ;
-			float       qz = float(ReadBinaryLittleEndian<double>(&imagesFile)) ;
-			float       tx = float(ReadBinaryLittleEndian<double>(&imagesFile));
-			float       ty = float(ReadBinaryLittleEndian<double>(&imagesFile));
-			float       tz = float(ReadBinaryLittleEndian<double>(&imagesFile));
-			size_t      id = ReadBinaryLittleEndian<camera_t>(&imagesFile) ;
-
-
-			if (cameraParameters.find(id) == cameraParameters.end())
-			{
-				/* code multi camera broken
-				SIBR_ERR << "Could not find intrinsics for image: "
-					<< id << std::endl;
-			*/
-				id = 1;
-			}
-			const CameraParametersColmap& camParams = cameraParameters[id];
-
-
-			const sibr::Quaternionf quat(qw, qx, qy, qz);
-			const sibr::Matrix3f orientation = quat.toRotationMatrix().transpose() * converter;
-			sibr::Vector3f translation(tx, ty, tz);
-
-			sibr::Vector3f position = -(orientation * converter * translation);
-
-			sibr::InputCamera::Ptr camera;
-			if (fovXfovYFlag) {
-				camera = std::make_shared<InputCamera>(InputCamera(camParams.fy, camParams.fx, 0.0f, 0.0f, int(camParams.width), int(camParams.height), int(cId)));
-			}
-			else {
-				camera = std::make_shared<InputCamera>(InputCamera(camParams.fy, 0.0f, 0.0f, int(camParams.width), int(camParams.height), int(cId)));
-			}
-			std::string image_name;
-			char name_char;
-			do {
-				imagesFile.read(&name_char, 1);
-				if (name_char != '\0') {
-					image_name += name_char;
-				}
-			} while (name_char != '\0');
-
-			camera->name(image_name);
-			camera->position(position);
-			camera->rotation(sibr::Quaternionf(orientation));
-			camera->znear(zNear);
-			camera->zfar(zFar);
-			cameras.push_back(camera);
-
-
-    		// ignore the 2d points
-    		const size_t num_points2D = ReadBinaryLittleEndian<uint64_t>(&imagesFile);
-
-    			for (size_t j = 0; j < num_points2D; ++j) {
-			      const double x = ReadBinaryLittleEndian<double>(&imagesFile);
-			      const double y = ReadBinaryLittleEndian<double>(&imagesFile);
-				  point3D_t id = ReadBinaryLittleEndian<point3D_t>(&imagesFile);
-    			}
-		}
-		return cameras;
-	}
-
-	std::vector<InputCamera::Ptr> InputCamera::loadJSON(const std::string& jsonPath, const float zNear, const float zFar)
-	{
-		std::ifstream json_file(jsonPath, std::ios::in);
-
-		if (!json_file)
-		{
-			std::cerr << "file loading failed: " << jsonPath << std::endl;
-			return std::vector<InputCamera::Ptr>();
-		}
-
-		std::vector<InputCamera::Ptr> cameras;
-
-		picojson::value v;
-		picojson::set_last_error(std::string());
-		std::string err = picojson::parse(v, json_file);
-		if (!err.empty()) {
-			picojson::set_last_error(err);
-			json_file.setstate(std::ios::failbit);
-		}
-
-		picojson::array& frames = v.get<picojson::array>();
-
-		for (size_t i = 0; i < frames.size(); ++i)
-		{
-			int id = frames[i].get("id").get<double>();
-			std::string imgname = frames[i].get("img_name").get<std::string>();
-			int width = frames[i].get("width").get<double>();
-			int height = frames[i].get("height").get<double>();
-			float fy = frames[i].get("fy").get<double>();
-			float fx = frames[i].get("fx").get<double>();
-
-			sibr::InputCamera::Ptr camera = std::make_shared<InputCamera>(InputCamera(fy, fx, 0.0f, 0.0f, width, height, id));
-
-			picojson::array& pos = frames[i].get("position").get<picojson::array>();
-			sibr::Vector3f position(pos[0].get<double>(), pos[1].get<double>(), pos[2].get<double>());
-
-			//position.x() = 0;
-			//position.y() = 0;
-			//position.z() = 1;
-
-			picojson::array& rot = frames[i].get("rotation").get<picojson::array>();
-			sibr::Matrix3f orientation;
-			for (int i = 0; i < 3; i++)
-			{
-				picojson::array& row = rot[i].get<picojson::array>();
-				for (int j = 0; j < 3; j++)
-				{
-					orientation(i, j) = row[j].get<double>();
-				}
-			}
-			orientation.col(1) = -orientation.col(1);
-			orientation.col(2) = -orientation.col(2);
-			//orientation = sibr::Matrix3f::Identity();
-
-			camera->name(imgname);
-			camera->position(position);
-			camera->rotation(sibr::Quaternionf(orientation));
-			camera->znear(zNear);
-			camera->zfar(zFar);
-			cameras.push_back(camera);
-		}
-		return cameras;
-	}
-
-	std::vector<InputCamera::Ptr> InputCamera::loadTransform(const std::string& transformPath, int w, int h, std::string extension, const float zNear, const float zFar, const int offset, const int fovXfovYFlag)
-	{
-		std::ifstream json_file(transformPath, std::ios::in);
-
-		if (!json_file)
-		{
-			std::cerr << "file loading failed: " << transformPath << std::endl;
-			return std::vector<InputCamera::Ptr>();
-		}
-
-		std::vector<InputCamera::Ptr> cameras;
-
-		picojson::value v;
-		picojson::set_last_error(std::string());
-		std::string err = picojson::parse(v, json_file);
-		if (!err.empty()) {
-			picojson::set_last_error(err);
-			json_file.setstate(std::ios::failbit);
-		}
-
-		float fovx = v.get("camera_angle_x").get<double>();
-		picojson::array& frames = v.get("frames").get<picojson::array>();
-
-		for (int i = 0; i < frames.size(); i++)
-		{
-			std::string imgname = frames[i].get("file_path").get<std::string>() + "." + extension;
-
-			auto mat = frames[i].get("transform_matrix").get<picojson::array>();
-
-			Eigen::Matrix4f matrix;
-			for (int i = 0; i < 4; i++)
-			{
-				auto row = mat[i].get<picojson::array>();
-				for (int j = 0; j < 4; j++)
-				{
-					matrix(i, j) = row[j].get<double>();
-				}
-			}
-
-			Eigen::Matrix3f R = matrix.block<3, 3>(0, 0);
-			Eigen::Vector3f T(matrix(0, 3), matrix(1, 3), matrix(2, 3));
-
-			float focalx = 0.5f * w / tan(fovx / 2.0f);
-			float focaly = (((float)h)/w) * focalx;
-
-			sibr::InputCamera::Ptr camera;
-			if (fovXfovYFlag) {
-				camera = std::make_shared<InputCamera>(InputCamera(focaly, focalx, 0.0f, 0.0f, int(w), int(h), i + offset));
-			}
-			else {
-				camera = std::make_shared<InputCamera>(InputCamera(focalx, 0.0f, 0.0f, int(w), int(h), i + offset));
-			}
-
-			camera->name(imgname);
-			camera->position(T);
-			camera->rotation(sibr::Quaternionf(R));
-			camera->znear(zNear);
-			camera->zfar(zFar);
-			cameras.push_back(camera);
-		}
-		return cameras;
-	}
-
-
-} 
+} // namespace sibr

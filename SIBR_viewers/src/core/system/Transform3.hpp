@@ -35,7 +35,7 @@ namespace sibr
 	public:
 
 		/** Constructor: identity transform. */
-		Transform3( void ) : _position(0, 0, 0), _scale(1., 1., 1.) {
+		Transform3( void ) : _position(0, 0, 0) {
 			_rotation.setIdentity();
 		}
 
@@ -74,8 +74,6 @@ namespace sibr
 		 **/
 		void				translate( const Vector3& v, const Transform3& ref );
 
-
-		void				scale(const float& s);
 		/** Set the position.
 		 *\param x x position
 		 *\param y y position
@@ -227,7 +225,7 @@ namespace sibr
 	private:
 		Vector3		    _position;
 		Quaternion		_rotation;
-		Vector3			_scale;
+
 	};
 
 	/// Helper def.
@@ -289,12 +287,6 @@ namespace sibr
 	template <typename T>
 	void		Transform3<T>::translate( const Vector3& v, const Transform3& ref ) {
 		translate( ref.rotation().operator*(v) );
-	}
-
-	template<typename T>
-	inline void Transform3<T>::scale(const float& s)
-	{
-		_scale = Vector3(s, s, s);
 	}
 
 	template <typename T>
@@ -359,13 +351,7 @@ namespace sibr
 	template <typename T>
 	Matrix4f Transform3<T>::matrix( void ) const {
 		Matrix4f trans = matFromQuat(_rotation);
-		Matrix4f scaleMat = Matrix4f::Identity();
-		scaleMat(0, 0) = _scale.x();
-		scaleMat(1, 1) = _scale.y();
-		scaleMat(2, 2) = _scale.z();
-
-		trans = matFromTranslation(_position) * trans * scaleMat; // Opti (direct)
-
+		trans = matFromTranslation(_position) * trans; // Opti (direct)
 		return trans;
 	}
 
