@@ -4,9 +4,6 @@
 [submodule "submodules/diff-gaussian-rasterization"]
 	path = submodules/diff-gaussian-rasterization
 	url = https://github.com/graphdeco-inria/diff-gaussian-rasterization
-[submodule "SIBR_viewers"]
-	path = SIBR_viewers
-	url = https://gitlab.inria.fr/sibr/sibr_core.git
 [submodule "submodules/gtracer"]
 	path = submodules/gtracer
 	url = https://github.com/fudan-zvg/gtracer.git
